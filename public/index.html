@@ -1,0 +1,752 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Clickety-Clack: the daily English train quiz</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@700;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#e9eef3;--card:#fbfcfd;--ink:#142238;--mute:#5d6c80;--line:#c9d3de;--acc:#c8102e;--good:#23874a;--mid:#c58b00;--bad:#c8102e;--rail:#142238;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0e1622;--card:#16212f;--ink:#e8eef6;--mute:#93a3b8;--line:#2a384b;--acc:#ff5a6e;--good:#4cc27a;--mid:#e8b22e;--bad:#ff6b7a;--rail:#e8eef6;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0e1622;--card:#16212f;--ink:#e8eef6;--mute:#93a3b8;--line:#2a384b;--acc:#ff5a6e;--good:#4cc27a;--mid:#e8b22e;--bad:#ff6b7a;--rail:#e8eef6;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.55 "Gill Sans","Trebuchet MS",system-ui,sans-serif}
+main{max-width:560px;margin:0 auto;padding:18px 16px 40px}
+h1{font:700 2rem/1.1 Georgia,"Times New Roman",serif;margin:.2em 0 .1em;letter-spacing:-.01em}
+h2{font:700 1.3rem/1.3 Georgia,serif;margin:.2em 0 .5em}
+p{margin:.4em 0}
+.mute{color:var(--mute);font-size:.92rem}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px;margin:14px 0}
+button{font:inherit;cursor:pointer;border-radius:8px;border:1.5px solid var(--ink);background:transparent;color:var(--ink);padding:10px 14px;min-height:44px}
+button.main{background:var(--ink);color:var(--bg);font-weight:700}
+button:focus-visible,input:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
+button:disabled{opacity:.45;cursor:default}
+.opts{display:grid;gap:8px;margin:12px 0}
+.opts button{text-align:left}
+.opts button.on{background:var(--ink);color:var(--bg)}
+.opts button.ok{border-color:var(--good);background:var(--good);color:#fff}
+.opts button.no{border-color:var(--bad);background:var(--bad);color:#fff}
+input{font:inherit;width:100%;padding:10px 12px;border:1.5px solid var(--ink);border-radius:8px;background:var(--card);color:var(--ink);min-height:44px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.chip{padding:8px 12px;min-height:40px}
+.slot{min-height:56px;border:1.5px dashed var(--line);border-radius:8px;padding:8px;display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}
+.lv{display:inline-block;font-size:.8rem;font-weight:700;border:1.5px solid var(--mute);color:var(--mute);border-radius:4px;padding:0 6px;margin-right:6px}
+.bar{height:6px;background:var(--line);border-radius:3px;overflow:hidden;margin:8px 0}
+.bar i{display:block;height:100%;width:100%;background:var(--acc);transition:width .1s linear}
+.track{position:relative;height:34px;margin:14px 4px 6px}
+.track:before{content:"";position:absolute;left:0;right:0;top:22px;height:4px;background:repeating-linear-gradient(90deg,var(--rail) 0 10px,transparent 10px 16px);opacity:.55}
+.track b{position:absolute;top:0;font-size:1.4rem;line-height:1;transform:translateX(-50%);transition:left .6s ease}
+.ends{display:flex;justify-content:space-between;font-size:.85rem;color:var(--mute)}
+.train{display:flex;gap:4px;align-items:flex-end;margin:10px 0;flex-wrap:wrap}
+.cx{width:30px;height:20px;border-radius:4px;border:1.5px solid var(--ink)}
+.cx.good{background:var(--good)}.cx.mid{background:var(--mid)}.cx.none{background:transparent;border-style:dashed}
+.fb{border-left:5px solid var(--mid);padding:6px 12px;margin:12px 0;background:var(--bg);border-radius:0 8px 8px 0}
+.fb.good{border-color:var(--good)}.fb.none{border-color:var(--bad)}
+ul{padding-left:1.2em;margin:.4em 0}
+li{margin:.3em 0}
+@keyframes shake{20%,60%{transform:translateX(-7px)}40%,80%{transform:translateX(7px)}}
+@keyframes pop{0%{transform:scale(.94)}60%{transform:scale(1.03)}100%{transform:scale(1)}}
+@keyframes couple{from{transform:translateX(44px);opacity:0}to{transform:none;opacity:1}}
+@keyframes chug{50%{margin-top:-3px}}
+@keyframes puff{from{transform:translate(0,0) scale(.4);opacity:.75}to{transform:translate(-20px,-26px) scale(1.5);opacity:0}}
+@keyframes rise{from{transform:translateY(10px);opacity:0}to{transform:none;opacity:1}}
+@keyframes fall{to{transform:translateY(112vh) rotate(540deg)}}
+.card{animation:rise .35s both}
+.fb{animation:rise .3s both}
+.card.shake{animation:shake .4s}
+.card.pop{animation:pop .35s}
+.opts button.ok{animation:pop .4s}
+.cx.new{animation:couple .45s both}
+.track b.run{animation:chug .22s infinite}
+.puff{position:absolute;top:2px;width:9px;height:9px;margin-left:-14px;border-radius:50%;background:var(--mute);pointer-events:none;animation:puff .9s ease-out forwards}
+.conf{position:fixed;top:-16px;width:9px;height:14px;pointer-events:none;z-index:9;animation:fall 2.4s ease-in forwards}
+select,textarea{font:inherit;width:100%;padding:10px 12px;border:1.5px solid var(--ink);border-radius:8px;background:var(--card);color:var(--ink);min-height:44px}
+summary{cursor:pointer;font-weight:700}
+ol{padding-left:1.3em}
+.snd{position:fixed;top:calc(env(safe-area-inset-top,0px) + 8px);right:10px;z-index:5;min-height:40px;min-width:44px;padding:2px 10px;background:var(--card)}
+@media (prefers-reduced-motion:reduce){*,*:before{animation:none!important;transition:none!important}}
+:root{--bg:#e9f2f8;--card:#fff;--ink:#14365c;--mute:#5a7088;--line:#c6d6e4;--acc:#e0382c;--good:#1f9d57;--mid:#e5a100;--bad:#d6382d;--rail:#14365c;--edge:#14365c;--yel:#ffd23f;--onyel:#14365c;--sky1:#bfe0f5;--sky2:#e8f4fb;--hill1:#94c9a4;--hill2:#6fb08c;--sun:#ffd23f}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0c1d33;--card:#14294a;--ink:#e8f1fa;--mute:#9fb4c9;--line:#27415f;--acc:#ff6a5c;--good:#3fc77a;--mid:#f2b73a;--bad:#ff7366;--rail:#bcd3ea;--edge:#3f6591;--sky1:#0b1d3a;--sky2:#1a3a66;--hill1:#1f5059;--hill2:#17414d;--sun:#f4e7b0}}
+:root[data-theme="dark"]{--bg:#0c1d33;--card:#14294a;--ink:#e8f1fa;--mute:#9fb4c9;--line:#27415f;--acc:#ff6a5c;--good:#3fc77a;--mid:#f2b73a;--bad:#ff7366;--rail:#bcd3ea;--edge:#3f6591;--sky1:#0b1d3a;--sky2:#1a3a66;--hill1:#1f5059;--hill2:#17414d;--sun:#f4e7b0}
+body{font-family:"Barlow","Gill Sans","Trebuchet MS",system-ui,sans-serif;font-size:18px;background:var(--bg) linear-gradient(var(--sky1),var(--bg) 340px) no-repeat}
+h1,h2{font-family:"Barlow Condensed","Arial Narrow","Franklin Gothic Medium",sans-serif;letter-spacing:.005em}
+h1{font-weight:800;font-size:3rem;line-height:1;margin:.2em 0 .12em}
+h2{font-weight:700;font-size:1.6rem;margin:.1em 0 .4em}
+.card{background:var(--card);border:2px solid var(--edge);border-radius:18px;box-shadow:0 5px 0 var(--edge);padding:18px;margin:18px 0}
+.ticket h2{font-family:"Barlow","Gill Sans",system-ui,sans-serif;font-weight:600;font-size:1.4rem;line-height:1.3;padding-bottom:12px;margin-bottom:14px;border-bottom:2px dashed var(--line)}
+button{font-family:inherit;font-weight:600;border:2px solid var(--edge);border-radius:12px;background:var(--card);color:var(--ink);box-shadow:0 3px 0 var(--edge);transition:transform .08s,box-shadow .08s}
+button:active:not(:disabled){transform:translateY(3px);box-shadow:0 0 0 var(--edge)}
+button.main{background:var(--yel);color:var(--onyel);font-weight:700}
+button:disabled{opacity:.5}
+.opts{counter-reset:o;gap:10px}
+.opts button{display:flex;align-items:center;gap:12px;padding:12px 14px;font-size:1.05rem}
+.opts button:before{counter-increment:o;content:counter(o,upper-alpha);flex:none;width:28px;height:28px;border-radius:50%;background:var(--rail);color:var(--card);display:grid;place-items:center;font-size:.85rem;font-weight:700}
+.opts button.on{background:var(--yel);color:var(--onyel)}
+.opts button.ok{background:var(--good);color:#fff;border-color:var(--edge)}
+.opts button.no{background:var(--bad);color:#fff;border-color:var(--edge)}
+.opts button:disabled{opacity:1}
+.opts button:disabled:not(.ok):not(.no){opacity:.55}
+input,select,textarea{border:2px solid var(--edge);border-radius:12px;font-size:1.1rem}
+.lv{background:var(--yel);color:var(--onyel);border:2px solid var(--edge);border-radius:6px;padding:0 7px;font-weight:700}
+.bar{height:12px;border-radius:7px;border:2px solid var(--edge);background:var(--line)}
+.bar i{background:var(--yel)}
+.track{height:92px;margin:16px 22px 6px;overflow:visible}
+.track .scene{position:absolute;inset:0;z-index:0;border-radius:16px;border:2px solid var(--edge);background:radial-gradient(circle at 86% 26%,var(--sun) 0 10px,transparent 11px),radial-gradient(90% 70% at 18% 135%,var(--hill1) 0 58%,transparent 59%),radial-gradient(80% 65% at 78% 140%,var(--hill2) 0 58%,transparent 59%),linear-gradient(var(--sky1),var(--sky2))}
+.track:before{top:auto;bottom:17px;height:5px;opacity:1;z-index:1;background:repeating-linear-gradient(90deg,var(--edge) 0 3px,transparent 3px 12px)}
+.track:after{content:"";position:absolute;left:0;right:0;bottom:22px;height:3px;background:var(--edge);z-index:1}
+.track .stn{position:absolute;bottom:14px;width:10px;height:10px;margin-left:-5px;border-radius:50%;background:var(--card);border:3px solid var(--edge);z-index:2}
+.track b{top:auto;bottom:21px;font-size:2.3rem;z-index:3;transform:translateX(-50%) scaleX(-1)}
+@keyframes chug{50%{margin-bottom:3px}}
+.puff{top:auto;bottom:56px}
+.ends{margin:0 22px;font-weight:600}
+.cx{width:34px;height:24px;border-radius:6px 6px 3px 3px;border:2px solid var(--edge);position:relative;background-size:100% 9px;background-position:0 4px;background-repeat:no-repeat}
+.cx.good{background-color:var(--good);background-image:repeating-linear-gradient(90deg,transparent 0 4px,rgba(255,255,255,.8) 4px 9px)}
+.cx.mid{background-color:var(--mid);background-image:repeating-linear-gradient(90deg,transparent 0 4px,rgba(255,255,255,.8) 4px 9px)}
+.cx:after{content:"";position:absolute;left:2px;right:2px;bottom:-8px;height:6px;background:radial-gradient(circle at 50% 50%,var(--edge) 0 2.6px,transparent 3px) 0 0/16px 6px repeat-x}
+.train{margin:12px 0 18px}
+.fb{border-radius:0 10px 10px 0}
+.snd{border-radius:50%;min-width:44px}
+@media (max-width:380px){h1{font-size:2.5rem}}
+
+/* Visual refresh: lively dashboard, clearer hierarchy, and topic collections */
+:root{--bg:#f2f6ff;--card:#ffffff;--ink:#17294d;--mute:#63728e;--line:#dbe3f2;--acc:#ff6b55;--good:#219b68;--mid:#e4a11b;--bad:#dc4f5c;--rail:#17294d;--edge:#263d68;--yel:#ffe06b;--onyel:#17294d;--sky1:#d9eaff;--sky2:#f4f7ff;--hill1:#9fd8bd;--hill2:#68bca4;--sun:#ffda69}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0c1426;--card:#151f36;--ink:#edf3ff;--mute:#a7b5d0;--line:#2a3855;--acc:#ff806d;--good:#48cb91;--mid:#ffd166;--bad:#ff7d87;--rail:#e4edff;--edge:#4b628b;--yel:#ffdc72;--onyel:#17294d;--sky1:#14294a;--sky2:#202e4a;--hill1:#326b61;--hill2:#285a56;--sun:#ffd166}}
+:root[data-theme="dark"]{--bg:#0c1426;--card:#151f36;--ink:#edf3ff;--mute:#a7b5d0;--line:#2a3855;--acc:#ff806d;--good:#48cb91;--mid:#ffd166;--bad:#ff7d87;--rail:#e4edff;--edge:#4b628b;--yel:#ffdc72;--onyel:#17294d;--sky1:#14294a;--sky2:#202e4a;--hill1:#326b61;--hill2:#285a56;--sun:#ffd166}
+body{background:radial-gradient(ellipse at 90% 0%,color-mix(in srgb,var(--sky1) 75%,transparent),transparent 440px),var(--bg);}
+main{max-width:850px;padding:28px 22px 56px}
+h1{font-size:clamp(2.8rem,7vw,4.5rem);letter-spacing:-.035em;line-height:.95;margin:.25em 0 .18em;text-shadow:0 2px 0 color-mix(in srgb,var(--ink) 8%,transparent)}
+h2{font-size:1.65rem}
+.masthead{position:relative;padding:28px 28px 24px;margin:6px 0 22px;border:2px solid var(--edge);border-radius:26px;overflow:hidden;background:linear-gradient(120deg,var(--card),color-mix(in srgb,var(--sky1) 72%,var(--card)));box-shadow:0 7px 0 var(--edge)}
+.masthead:after{content:'🚂';position:absolute;right:22px;bottom:8px;font-size:clamp(3.5rem,10vw,6rem);opacity:.17;transform:scaleX(-1) rotate(-2deg);pointer-events:none}
+.masthead>*{position:relative;z-index:1;max-width:75%}.eyebrow{font-size:.76rem;font-weight:800;letter-spacing:.15em;text-transform:uppercase;color:var(--acc)}
+.masthead .subtitle{font-size:1.08rem;color:var(--mute);max-width:65%}
+.card{border:2px solid var(--edge);border-radius:20px;box-shadow:0 5px 0 color-mix(in srgb,var(--edge) 92%,transparent);padding:20px;margin:18px 0;background:var(--card)}
+.card h2{display:flex;align-items:center;gap:9px}
+button{border-radius:13px;box-shadow:0 3px 0 var(--edge);transition:transform .14s ease,box-shadow .14s ease,filter .14s ease}
+button:hover:not(:disabled){filter:brightness(1.035);transform:translateY(-1px)}
+button:active:not(:disabled){transform:translateY(2px);box-shadow:0 1px 0 var(--edge)}
+button.main{background:var(--yel);color:var(--onyel)}
+.row button{flex:0 1 auto}
+.menu-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin:18px 0}
+.topic-card{--topic:#4c8bf5;position:relative;min-width:0;margin:0;padding:18px;border-radius:20px;border:2px solid var(--edge);border-top:8px solid var(--topic);background:var(--card);box-shadow:0 5px 0 var(--edge);animation:rise .35s both}
+.topic-card[data-topic="G"]{--topic:#8b72e8}.topic-card[data-topic="V"]{--topic:#e9a23b}.topic-card[data-topic="E"]{--topic:#27a88b}.topic-card[data-topic="W"]{--topic:#4d8de6}
+.topic-head{display:flex;align-items:center;gap:12px;margin-bottom:12px}.topic-icon{width:48px;height:48px;flex:none;display:grid;place-items:center;border-radius:15px;background:color-mix(in srgb,var(--topic) 16%,var(--card));font-size:1.8rem}
+.topic-head h3{font-size:1.35rem;line-height:1.05;margin:0;font-family:"Barlow Condensed","Arial Narrow",sans-serif}.topic-head p{font-size:.88rem;color:var(--mute);margin:4px 0 0}
+.subtopics{display:grid;grid-template-columns:1fr;gap:8px}.subtopic{width:100%;min-height:42px;text-align:left;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 11px;font-size:.95rem;border:1.5px solid var(--line);box-shadow:none;background:color-mix(in srgb,var(--topic) 5%,var(--card))}.subtopic:before{content:none!important}.subtopic .sub-count{flex:none;font-size:.76rem;color:var(--mute);background:var(--bg);padding:2px 7px;border-radius:99px}
+.subtopic:hover:not(:disabled){border-color:var(--topic);box-shadow:0 2px 0 var(--topic)}
+.topic-all{margin-top:10px;width:100%;font-size:.9rem;box-shadow:none;border-style:dashed}
+.feature-card{background:linear-gradient(120deg,color-mix(in srgb,var(--yel) 23%,var(--card)),var(--card) 75%)}
+.feature-top{display:flex;justify-content:space-between;gap:14px;align-items:flex-start}.feature-emoji{font-size:2.3rem;line-height:1}
+.section-kicker{font-size:.76rem;font-weight:800;letter-spacing:.13em;text-transform:uppercase;color:var(--mute);margin-bottom:5px}
+.menu-actions{display:grid;grid-template-columns:1fr 1fr;gap:12px}.menu-actions button{width:100%}
+.track{margin-left:8px;margin-right:8px}.ends{margin-left:8px;margin-right:8px}
+.details-card{background:color-mix(in srgb,var(--sky1) 23%,var(--card))}
+.snd{border:2px solid var(--edge);box-shadow:0 3px 0 var(--edge);background:var(--card)}
+@media(max-width:620px){main{padding:18px 13px 42px}.menu-grid{grid-template-columns:1fr;gap:13px}.masthead{padding:23px 19px}.masthead>*{max-width:82%}.masthead .subtitle{max-width:78%}.topic-card{padding:16px}.menu-actions{grid-template-columns:1fr}.card{padding:17px}.track{margin-left:4px;margin-right:4px}}
+@media(prefers-reduced-motion:reduce){.topic-card{animation:none}}
+
+.subhead{font-weight:800;font-size:.78rem;letter-spacing:.1em;text-transform:uppercase;color:var(--mute);margin:8px 0 0}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:14px 0}
+.kpi{border:2px solid var(--edge);border-radius:14px;padding:10px 6px;text-align:center;background:var(--bg)}
+.kpi b{display:block;font:800 2rem/1 "Barlow Condensed","Arial Narrow",sans-serif}
+.kpi span{font-size:.85rem;color:var(--mute)}
+.report h3{font:700 1.25rem "Barlow Condensed","Arial Narrow",sans-serif;margin:18px 0 6px}
+.rt{width:100%;border-collapse:collapse}.rt td{padding:5px 6px}
+.pb{display:block;height:12px;background:var(--line);border-radius:6px;overflow:hidden;min-width:80px}
+.pb i{display:block;height:100%;background:var(--good)}
+.qlist{list-style:none;padding:0;margin:0}
+.qlist li{border-left:6px solid var(--line);padding:8px 12px;margin:10px 0;background:var(--bg);border-radius:0 12px 12px 0}
+.qlist li.q-good{border-color:var(--good)}.qlist li.q-mid{border-color:var(--mid)}.qlist li.q-none{border-color:var(--bad)}
+.qh{display:flex;gap:8px;font-weight:600}.qa{font-size:.95rem}
+@media(max-width:560px){.kpis{grid-template-columns:repeat(2,1fr)}}
+.tip{background:var(--bg);border:2px dashed var(--line);border-radius:12px;padding:8px 12px;margin:10px 0;font-size:.95rem}
+.fs{font-weight:700;color:var(--good)}
+.lis{min-height:32px;padding:0 8px;font-size:1rem;vertical-align:middle;margin-left:6px;box-shadow:none}
+.study{border:2px solid var(--edge);border-radius:14px;padding:10px 12px;margin:8px 0}.study p{margin:4px 0 8px}
+.exl{list-style:none;padding:0;margin:6px 0}.exl li{padding:8px 0;border-bottom:1px dashed var(--line)}
+.code{background:var(--yel);color:var(--onyel);padding:0 .3em;border-radius:10px;letter-spacing:.12em}
+.lobby{display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+.lobby img{background:#fff;padding:8px;border-radius:12px;border:2px solid var(--edge)}
+.plist{list-style:none;padding:0;margin:0;display:flex;flex-wrap:wrap;gap:8px}
+.plist li{border:2px solid var(--edge);border-radius:20px;padding:4px 12px;background:var(--bg)}.plist li.off{opacity:.5}
+.mb{margin:8px 0}
+.brow{display:grid;grid-template-columns:28px 1fr 90px 64px auto;gap:8px;align-items:center;padding:4px 8px;border-radius:10px}
+.brow.me{background:var(--yel);color:var(--onyel)}.brow.off{opacity:.55}
+.rk{font-weight:800}.nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pbar{height:8px;background:var(--line);border-radius:4px;overflow:hidden}.pbar i{display:block;height:100%;background:var(--good)}
+.mi{text-align:right;font-weight:700}
+@media(max-width:480px){.brow{grid-template-columns:24px 1fr 56px 56px}.brow .sq{display:none}}
+</style>
+</head>
+<body>
+<button id="snd" class="snd"></button>
+<main id="app"></main>
+<script>
+const ROUTE=[["London",0],["Peterborough",76],["Doncaster",156],["York",188],["Darlington",232],["Newcastle",268],["Berwick-upon-Tweed",336],["Edinburgh",393]];
+const TOTAL=393,MAXMI=60,MAXDELAY=20,LV={A1:45,A2:60,B1:75};
+const TIME={mc:20,multi:25,type:30,num:25,order:35};
+const LABEL={mc:"Pick one answer",multi:"Pick all the correct answers",type:"Type your answer",num:"Write a number",order:"Put them in order"};
+const Q=[
+{t:"mc",lv:"A1",q:"What is the opposite of “big”?",o:["small","tall","new","old"],a:0},
+{t:"mc",lv:"A1",q:"Choose the correct sentence.",o:["She like pizza.","She likes pizza.","She liking pizza.","She are like pizza."],a:1},
+{t:"mc",lv:"A2",q:"I ___ to school by bus every day.",o:["goes","going","go","am go"],a:2},
+{t:"mc",lv:"B1",q:"Which word means “very happy”?",o:["delighted","exhausted","furious","anxious"],a:0},
+{t:"mc",lv:"B1",q:"What is the capital city of Australia?",o:["Sydney","Melbourne","Canberra","Perth"],a:2},
+{t:"multi",lv:"A1",q:"Select ALL the days of the weekend.",o:["Monday","Saturday","Sunday","Friday"],a:[1,2]},
+{t:"multi",lv:"A2",q:"Select ALL the verbs in the past simple.",o:["went","eat","saw","buy","was"],a:[0,2,4]},
+{t:"multi",lv:"A1",q:"Select ALL the things you can wear.",o:["jacket","scarf","window","boots"],a:[0,1,3]},
+{t:"type",lv:"A1",q:"What do we call a person who teaches in a school? (one word)",a:["teacher"]},
+{t:"type",lv:"A2",q:"Write the past simple of “go”.",a:["went"]},
+{t:"type",lv:"A2",q:"Complete the question: “How ___ is this book?” – “It costs five pounds.”",a:["much"]},
+{t:"num",lv:"A1",q:"How many letters are there in the English alphabet?",a:26,s:10},
+{t:"num",lv:"A2",q:"How many minutes are there in two hours?",a:120,s:60},
+{t:"order",lv:"A1",q:"Put the words in order to make a sentence.",a:["She","is","reading","a","book"]},
+{t:"order",lv:"A2",q:"Put the words in order to make a question.",a:["Where","do","you","live"]},
+{t:"order",lv:"A1",q:"Put the parts of the day in order. Start with the morning.",a:["morning","afternoon","evening","night"]},
+{t:'mc',lv:'A1',q:'Which word is a colour?',o:['green','chair','water','school'],a:0},
+{t:'multi',lv:'A1',q:'Select ALL the animals.',o:['dog','table','horse','bread'],a:[0,2]},
+{t:'type',lv:'A1',q:'Write the plural of “child”.',a:['children']},
+{t:'mc',lv:'A2',q:'My sister is ___ than me.',o:['tall','taller','more tall','the tallest'],a:1},
+{t:'mc',lv:'A2',q:'We ___ dinner when the phone rang.',o:['had','were having','have','are having'],a:1},
+{t:'multi',lv:'A2',q:'Select ALL the correct sentences.',o:['I have lived here since 2020.','He don’t like tea.','They are playing football now.','She can to swim.'],a:[0,2]},
+{t:'type',lv:'A2',q:'Write the opposite of “cheap”.',a:['expensive']},
+{t:'type',lv:'A2',q:'Complete with one word: “I am interested ___ music.”',a:['in']},
+{t:'order',lv:'A2',q:'Put the words in order to make a sentence.',a:['I','have','never','been','to','Scotland']},
+{t:'mc',lv:'B1',q:'If I ___ more money, I would buy a new car.',o:['have','had','will have','would have'],a:1},
+{t:'mc',lv:'B1',q:'The report ___ by the manager yesterday.',o:['wrote','was written','has wrote','is writing'],a:1},
+{t:'mc',lv:'B1',q:'Find the mistake: “She suggested to go to the cinema.”',o:['She','suggested','to go','to the cinema'],a:2},
+{t:'mc',lv:'B1',q:'What does “look up” mean in: “Look up the word in a dictionary”?',o:['find information','raise your eyes','visit','admire'],a:0},
+{t:'multi',lv:'B1',q:'Select ALL the words that mean “very big”.',o:['huge','tiny','enormous','minor','vast'],a:[0,2,4]},
+{t:'type',lv:'B1',q:'Write the noun from the verb “decide”.',a:['decision']},
+{t:'type',lv:'B1',q:'Complete with one word: “She has worked here ___ 2019.”',a:['since']},
+{t:'order',lv:'B1',q:'Put the words in order to make a sentence.',a:['If','I','had','time','I','would','help','you'],alt:[['I','would','help','you','if','I','had','time']]},
+{t:'mc',lv:'A1',th:'E',q:'Where do you buy bread?',o:['bakery','library','pharmacy','airport'],a:0},
+{t:'mc',lv:'A1',th:'E',q:'What do you say to a friend in the morning?',o:['Good morning','Good night','Goodbye','Thank you'],a:0},
+{t:'mc',lv:'A2',th:'E',q:'Choose the best answer: “How much is this T-shirt?”',o:['It’s twelve pounds.','It’s very nice.','Yes, please.','At six o’clock.'],a:0},
+{t:'mc',lv:'A2',th:'E',q:'At a restaurant you ask for the ___ to pay.',o:['bill','menu','fork','tip'],a:0},
+{t:'order',lv:'A2',th:'E',q:'Put the words in order to make a polite question.',a:['Could','you','help','me','please'],alt:[['Please','could','you','help','me']]},
+{t:'mc',lv:'B1',th:'E',q:'“I’m afraid I have ___ my bus.”',o:['missed','lost','left','caught'],a:0},
+{t:'type',lv:'B1',th:'E',q:'At the airport you show your ___. (a travel document, 8 letters)',a:['passport']},
+{t:'multi',lv:'B1',th:'E',q:'Select ALL the polite ways to ask for something.',o:['Could I have some water, please?','Give me water.','Would you mind opening the window?','Open the window now.'],a:[0,2]},
+{t:'mc',lv:'A1',th:'W',q:'In which country is the city of London?',o:['England','Spain','Italy','Poland'],a:0},
+{t:'type',lv:'A1',th:'W',q:'What is the capital city of France? (one word)',a:['paris']},
+{t:'mc',lv:'A2',th:'W',q:'Which language do people speak in Australia?',o:['English','French','German','Portuguese'],a:0},
+{t:'num',lv:'A2',th:'W',q:'How many continents are there?',a:7,s:3},
+{t:'mc',lv:'A2',th:'W',q:'Big Ben is in which city?',o:['London','Edinburgh','Dublin','Sydney'],a:0},
+{t:'mc',lv:'B1',th:'W',q:'Which is the longest river in the UK?',o:['Severn','Thames','Mersey','Trent'],a:0},
+{t:'multi',lv:'B1',th:'W',q:'Select ALL the countries where English is an official language.',o:['Canada','Brazil','New Zealand','Ireland','Japan'],a:[0,2,3]},
+{t:'num',lv:'B1',th:'W',q:'How many countries are there in the United Kingdom?',a:4,s:2},
+{t:'mc',lv:'A1',th:'V',q:'Which word is a fruit?',o:['apple','bread','milk','rice'],a:0},
+{t:'multi',lv:'A2',th:'V',q:'Select ALL the words for family members.',o:['uncle','kitchen','cousin','neighbour','grandmother'],a:[0,2,4]},
+{t:'mc',lv:'A2',th:'V',q:'A ___ is a person who cooks in a restaurant.',o:['chef','waiter','driver','nurse'],a:0},
+{t:'mc',lv:'B1',th:'V',q:'What is the opposite of “increase”?',o:['decrease','improve','continue','arrive'],a:0},
+{t:'type',lv:'B1',th:'V',q:'A person who writes books is an ___. (6 letters)',a:['author']}
+];
+const LS=['v-desc','g-ps','g-ps','v-desc','w-geo','e-daily','g-past','v-clothes','v-jobs','g-past','g-art','w-facts','w-facts','g-pc','g-quest','e-daily','v-desc','v-daily','g-art','g-comp','g-past','g-pp','v-desc','g-prep','g-pp','g-cond','g-pp','g-prep','v-daily','v-desc','v-desc','g-pp','g-cond','e-shop','e-social','e-shop','e-food','e-social','e-travel','e-travel','e-social','w-uk','w-geo','w-uk','w-geo','w-uk','w-uk','w-uk','w-uk','v-food','v-family','v-jobs','v-desc','v-jobs'];
+Q.forEach((q,i)=>{q.sub=LS[i];q.th=q.sub[0].toUpperCase()});
+const NQ=[];
+const mc=(lv,sub,q,r,...w)=>{const o=shuffle([r,...w],rng(q));NQ.push({t:'mc',lv,sub,q,o,a:o.indexOf(r)})};
+const mu=(lv,sub,q,r,w)=>{const o=shuffle([...r,...w],rng(q));NQ.push({t:'multi',lv,sub,q,o,a:r.map(x=>o.indexOf(x)).sort((p,n)=>p-n)})};
+const ty=(lv,sub,q,a)=>NQ.push({t:'type',lv,sub,q,a:a.split('|')});
+const nu=(lv,sub,q,a,s)=>NQ.push({t:'num',lv,sub,q,a,s});
+const od=(lv,sub,q,a,alt)=>NQ.push({t:'order',lv,sub,q,a:a.split(' '),alt:alt?[alt.split(' ')]:undefined});
+mc('A1','g-ps','He ___ coffee every morning.','drinks','drink','drinking','is drink');
+mc('A2','g-ps','She ___ like fish.','doesn’t','don’t','isn’t','not');
+ty('A2','g-ps','Complete with one word: “___ your brother play football?”','does');
+od('A1','g-ps','Put the words in order to make a sentence.','My mother works in a bank');
+mc('A1','g-pc','Look! The children ___ in the garden.','are playing','plays','play','is play');
+mc('A2','g-pc','I ___ TV at the moment.','am not watching','don’t watching','not watching','am not watch');
+ty('A2','g-pc','Write the –ing form of “run”.','running');
+od('A2','g-pc','Put the words in order to make a question.','What are you doing now');
+mc('A2','g-pm','I usually walk to work, but today I ___ the bus.','am taking','take','takes','am take');
+mc('A2','g-pm','She ___ French every Tuesday.','studies','is studying','study','studying');
+mc('B1','g-pm','Which sentence is correct?','I’m learning to drive this year.','I learn to driving this year.','I am learn to drive this year.','I learning to drive this year.');
+mu('A2','g-pm','Select ALL the sentences about a habit.',['I get up at seven every day.','She always drinks tea.'],['They are watching TV now.','He is cooking at the moment.']);
+ty('B1','g-pm','Complete with one word: “Water ___ at 100 °C.” (boil)','boils');
+mc('A1','g-tobe','I ___ a student.','am','is','are','be');
+mc('A1','g-tobe','They ___ from Spain.','are','is','am','be');
+mc('A1','g-tobe','She ___ at home. (negative)','isn’t','aren’t','don’t be','not');
+ty('A1','g-tobe','Complete with one word: “___ you tired?” – “Yes, I am.”','are');
+mc('A2','g-tobe','___ there a bank near here?','Is','Are','Do','Does');
+mc('A2','g-tobe','Yesterday we ___ at the cinema.','were','was','are','been');
+mc('A1','g-past','I ___ a film last night.','watched','watch','watching','watchs');
+ty('A2','g-past','Write the past simple of “buy”.','bought');
+mc('A2','g-past','She didn’t ___ the answer.','know','knew','known','knows');
+ty('A2','g-pp','Write the past participle of “eat”.','eaten');
+mc('A2','g-pp','Have you ever ___ sushi?','eaten','ate','eat','eating');
+mu('B1','g-pp','Select ALL the past participles.',['seen','done','written'],['saw','did']);
+mc('A2','g-cond','If it rains tomorrow, we ___ at home.','will stay','stayed','would have stayed','staying');
+mc('B1','g-cond','If I ___ rich, I would travel the world.','were','am','will be','would be');
+mc('B1','g-cond','If you heat ice, it ___.','melts','will melted','melted','would melt');
+mc('B1','g-cond','If she had studied, she ___ the exam.','would have passed','would pass','will pass','passed');
+od('B1','g-cond','Put the words in order to make a sentence.','If it rains we will stay at home','We will stay at home if it rains');
+mc('A1','g-modal','I ___ swim. I learned when I was five.','can','must','am','do');
+mc('A2','g-modal','You ___ park here. It is forbidden.','mustn’t','don’t have to','can','should');
+mc('A2','g-modal','You look tired. You ___ go to bed early.','should','to','are','does');
+mc('B1','g-modal','“Could I borrow your pen?” means:','I want to borrow your pen.','I can borrow your pen.','I borrowed your pen.','I must borrow your pen.');
+mu('A2','g-modal','Select ALL the modal verbs.',['can','must','should'],['eat','play']);
+ty('B1','g-modal','Complete with one word: “You don’t ___ to come if you are busy.”','have');
+mc('A1','g-comp','A bike is ___ than a car.','slower','slowest','more slow','slow');
+mc('A2','g-comp','This is the ___ film I have ever seen.','best','better','most good','goodest');
+ty('A2','g-comp','Write the comparative of “good”.','better');
+mc('B1','g-comp','Which sentence is correct?','She is more intelligent than her brother.','She is intelligenter than her brother.','She is more intelligent that her brother.','She is most intelligent than her brother.');
+mc('A1','g-art','She has ___ orange in her bag.','an','a','two','many');
+mc('A2','g-art','How ___ sugar do you want?','much','many','few','a few');
+mc('A2','g-art','There aren’t ___ chairs in the room.','any','some','a','much');
+mc('B1','g-art','I have ___ friends in this city. I feel lonely.','few','a few','little','a little');
+mc('A1','g-prep','The lesson starts ___ nine o’clock.','at','in','on','to');
+mc('A1','g-prep','My birthday is ___ June.','in','on','at','to');
+mc('A2','g-prep','We meet ___ Mondays.','on','in','at','by');
+mc('B1','g-prep','She is good ___ maths.','at','in','on','for');
+mc('A1','g-quest','___ is your name?','What','Where','When','Why');
+mc('A2','g-quest','___ do you get up? – “At seven o’clock.”','What time','What','Where','Who');
+od('A2','g-quest','Put the words in order to make a question.','How much does it cost');
+mc('B1','g-quest','Which question is correct?','Where did she go yesterday?','Where did she went yesterday?','Where she went yesterday?','Where does she went yesterday?');
+mc('A1','v-sport','In which sport do you use a racket and a ball?','tennis','football','swimming','basketball');
+mc('A1','v-sport','You play football on a ___.','pitch','court','track','pool');
+mu('A1','v-sport','Select ALL the sports you play with a ball.',['football','basketball','volleyball'],['swimming','cycling']);
+ty('A2','v-sport','What do you wear on your head when you ride a bike? (6 letters)','helmet');
+mc('A2','v-sport','The ___ blows the whistle in a football match.','referee','coach','fan','captain');
+mc('B1','v-sport','A person who watches a match is a ___.','spectator','referee','coach','goalkeeper');
+mc('A1','v-daily','You brush your ___ every morning.','teeth','ears','eyes','arms');
+mc('A1','v-daily','What time do you ___ up in the morning?','get','make','take','put');
+mc('A2','v-daily','I ___ the dishes after dinner.','do','make','take','have');
+mu('B1','v-daily','Select ALL the household chores.',['vacuuming','ironing','cooking'],['relaxing','jogging']);
+mc('A1','v-clothes','You wear ___ on your feet.','shoes','gloves','a hat','a scarf');
+mc('A1','v-clothes','It is cold. Put on your ___.','coat','sandals','shorts','swimsuit');
+mu('A2','v-clothes','Select ALL the clothes for a hot summer day.',['shorts','sandals','a T-shirt'],['a scarf','a woollen hat']);
+ty('A2','v-clothes','What do you wear on your hands in winter? (one word)','gloves');
+mc('B1','v-clothes','The jacket is too small. It doesn’t ___ me.','fit','match','wear','dress');
+mc('A1','v-home','You sleep in a ___.','bed','wardrobe','cooker','chair');
+mc('A1','v-home','You cook food in the ___.','kitchen','bathroom','bedroom','garden');
+mc('A1','v-home','You put your clothes in the ___.','wardrobe','fridge','cooker','mirror');
+mu('A2','v-home','Select ALL the furniture.',['sofa','table','armchair'],['window','curtain']);
+ty('A2','v-home','You sit on it to watch TV. It is big and soft. (4 letters)','sofa|couch');
+mc('B1','v-home','A ___ is a piece of furniture with many drawers.','chest of drawers','bookcase','stool','armchair');
+mc('A1','v-food','Which of these is a vegetable?','carrot','banana','cheese','biscuit');
+mc('A1','v-food','Which of these is a drink?','juice','butter','rice','bread');
+mu('A2','v-food','Select ALL the dairy products.',['milk','cheese','yoghurt'],['bread','rice']);
+mc('A2','v-food','Bread is made from ___.','flour','sugar','rice','salt');
+ty('A2','v-food','The meal you eat in the middle of the day is ___. (5 letters)','lunch');
+mc('A1','v-family','Your mother’s sister is your ___.','aunt','uncle','cousin','niece');
+mc('A1','v-family','Your father’s father is your ___.','grandfather','uncle','brother','nephew');
+ty('A2','v-family','Your brother’s daughter is your ___. (5 letters)','niece');
+mc('B1','v-family','Your husband’s mother is your ___.','mother-in-law','stepmother','grandmother','aunt');
+mc('A1','v-jobs','A person who looks after sick people in hospital is a ___.','nurse','chef','pilot','farmer');
+mc('A2','v-jobs','A person who flies a plane is a ___.','pilot','driver','sailor','mechanic');
+mc('B1','v-jobs','A ___ is the money you get every month from your job.','salary','ticket','receipt','pension');
+mc('A1','e-daily','How do you say 7:30?','half past seven','half to seven','seven past half','thirty to seven');
+mc('A1','e-daily','Which day comes after Tuesday?','Wednesday','Monday','Thursday','Friday');
+mc('A2','e-daily','How do you say 8:45?','a quarter to nine','a quarter past eight','half past eight','a quarter to eight');
+mc('A1','e-shop','Where can you buy medicine?','pharmacy','bakery','butcher’s','library');
+mc('A2','e-shop','At the till you ask: “Can I pay by ___?”','card','bag','price','change');
+mc('B1','e-shop','The shop assistant gives you your ___ when you pay too much.','change','receipt','discount','basket');
+mc('A1','e-food','In a restaurant you look at the ___.','menu','bill','tip','fork');
+mc('A2','e-food','Choose the polite way to order.','I’d like a coffee, please.','Give me a coffee.','I want coffee now.','Coffee!');
+mc('B1','e-food','A ___ is extra money you give to a waiter.','tip','bill','menu','plate');
+mu('A2','e-food','Select ALL the things you use to eat.',['fork','knife','spoon'],['plate','glass']);
+mc('A1','e-travel','Where do you wait for a train?','at the station','at the airport','at the harbour','at the garage');
+mc('A2','e-travel','Excuse me, how do I ___ the museum?','get to','go at','arrive','come in');
+mc('B1','e-travel','The flight was ___ because of the fog.','delayed','booked','packed','lost');
+mc('A1','e-social','Someone says “Thank you.” What do you say?','You’re welcome.','Good morning.','I’m sorry.','See you.');
+mc('A2','e-social','“Can I speak to Anna, please?” – “___”','Speaking.','Welcome.','Bye-bye.','Excuse.');
+mc('A1','w-geo','Which country is Rome in?','Italy','Spain','Greece','France');
+mc('A2','w-geo','What is the capital of Germany?','Berlin','Munich','Hamburg','Vienna');
+mc('B1','w-geo','Which ocean is between Europe and America?','the Atlantic','the Pacific','the Indian Ocean','the Arctic');
+nu('A1','w-facts','How many days are there in a week?',7,3);
+nu('A2','w-facts','How many seconds are there in a minute?',60,30);
+nu('A2','w-facts','How many months have exactly 30 days?',4,3);
+nu('B1','w-facts','How many hours are there in a week?',168,60);
+mc('A1','w-culture','When do many people celebrate Christmas?','25 December','1 January','14 February','31 October');
+mc('A2','w-culture','In the UK, “afternoon ___” is a traditional light meal with sandwiches and cakes.','tea','lunch','breakfast','dinner');
+mc('A2','w-culture','What do people give each other on Valentine’s Day?','cards and flowers','Easter eggs','Christmas trees','fireworks');
+mc('B1','w-culture','When is Bonfire Night in Britain?','5 November','31 October','25 December','1 January');
+mc('B1','w-culture','Which meal is traditional in England on Sundays?','roast dinner','sushi','paella','goulash');
+NQ.forEach(q=>{q.th=q.sub[0].toUpperCase();Q.push(q)});
+const $=s=>document.querySelector(s),app=$('#app');
+let AC=null,muted=false;
+function ac(){try{if(!AC)AC=new (window.AudioContext||window.webkitAudioContext)();if(AC.state==='suspended')AC.resume();return AC}catch(e){return null}}
+function tone(f,d,type,t0,vol){const c=ac();if(!c||muted)return;const o=c.createOscillator(),g=c.createGain(),t=c.currentTime+(t0||0);o.type=type||'sine';o.frequency.value=f;g.gain.setValueAtTime(0.0001,t);g.gain.linearRampToValueAtTime(vol||.15,t+.01);g.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(g);g.connect(c.destination);o.start(t);o.stop(t+d+.05)}
+function noise(d,t0,vol,fq){const c=ac();if(!c||muted)return;const n=Math.floor(c.sampleRate*d),buf=c.createBuffer(1,n,c.sampleRate),a=buf.getChannelData(0);for(let i=0;i<n;i++)a[i]=(Math.random()*2-1)*(1-i/n);const s=c.createBufferSource(),f=c.createBiquadFilter(),g=c.createGain();s.buffer=buf;f.type='bandpass';f.frequency.value=fq;g.gain.value=vol;s.connect(f);f.connect(g);g.connect(c.destination);s.start(c.currentTime+(t0||0))}
+const SFX={
+ click:()=>tone(520,.06,'square',0,.05),
+ tick:()=>tone(900,.04,'square',0,.06),
+ good:()=>{tone(660,.14,'triangle',0,.2);tone(880,.28,'triangle',.11,.2)},
+ mid:()=>{tone(523,.14,'triangle',0,.17);tone(587,.22,'triangle',.12,.15)},
+ bad:()=>{tone(220,.25,'sawtooth',0,.1);tone(165,.4,'sawtooth',.2,.1)},
+ clack:n=>{for(let i=0;i<n;i++){noise(.06,i*.3,.35,1600);noise(.06,i*.3+.13,.3,1100)}},
+ whistle:()=>{tone(740,.45,'sine',0,.13);tone(932,.6,'sine',.05,.1)},
+ fanfare:()=>[523,659,784,1047].forEach((f,i)=>tone(f,.3,'triangle',i*.15,.2))
+};
+function initSnd(){const b=$('#snd'),r=()=>{b.textContent=muted?'🔇':'🔊';b.setAttribute('aria-label',muted?'Sound is off. Turn sound on':'Sound is on. Turn sound off')};r();b.onclick=()=>{muted=!muted;store('cc_mute',muted?'1':'0');r();if(!muted)SFX.click()}}
+function adv(m){const b=$('.track b');if(!b)return;b.style.left=Math.min(100,m/TOTAL*100)+'%';b.classList.add('run');const e=$('.ends span:nth-child(2)');if(e)e.textContent=Math.min(m,TOTAL)+' / '+TOTAL+' miles';let n=0;const iv=setInterval(()=>{const p=document.createElement('i');p.className='puff';p.style.left=b.offsetLeft+'px';b.parentNode.appendChild(p);setTimeout(()=>p.remove(),950);if(++n>4){clearInterval(iv);b.classList.remove('run')}},130)}
+function confetti(){if(matchMedia('(prefers-reduced-motion:reduce)').matches)return;const cs=['#c8102e','#23874a','#c58b00','#2a5db0','#e8eef6'];for(let i=0;i<46;i++){const e=document.createElement('i');e.className='conf';e.style.left=Math.random()*100+'vw';e.style.background=cs[i%5];e.style.animationDelay=Math.random()*.6+'s';e.style.animationDuration=(1.8+Math.random()*1.4)+'s';document.body.appendChild(e);setTimeout(()=>e.remove(),3600)}}
+const store=(k,v)=>{try{if(v===undefined)return localStorage.getItem(k);localStorage.setItem(k,v)}catch(e){return null}};
+const today=()=>{const d=new Date();return d.getFullYear()+"-"+(d.getMonth()+1)+"-"+d.getDate()};
+function rng(s){let h=0;for(const c of s)h=Math.imul(31,h)+c.charCodeAt(0)|0;return()=>{h|=0;h=h+0x6D2B79F5|0;let t=Math.imul(h^h>>>15,1|h);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function shuffle(a,r){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(r()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+const norm=s=>String(s).toLowerCase().trim().replace(/[^a-z0-9 ]/g,"").replace(/\s+/g," ");
+function lev(a,b){const d=[];for(let i=0;i<=a.length;i++){d[i]=[i];for(let j=1;j<=b.length;j++)d[i][j]=i?0:j}for(let i=1;i<=a.length;i++)for(let j=1;j<=b.length;j++)d[i][j]=Math.min(d[i-1][j]+1,d[i][j-1]+1,d[i-1][j-1]+(a[i-1]===b[j-1]?0:1));return d[a.length][b.length]}
+function score(q,ans){
+ if(q.t==="mc")return ans===q.a?1:0;
+ if(q.t==="multi"){const p=ans||[],r=p.filter(x=>q.a.includes(x)).length,w=p.length-r;return Math.max(0,(r-w)/q.a.length)}
+ if(q.t==="type"){const x=norm(ans||"");return q.a.some(c=>{const n=norm(c);return x===n||(n.length>=4&&x&&lev(x,n)<=1)})?1:0}
+ if(q.t==="num"){const v=parseFloat(ans);return isNaN(v)?0:Math.max(0,1-Math.abs(v-q.a)/q.s)}
+ if(q.t==="order"){const p=(ans||[]).map(s=>s.toLowerCase());return Math.max(...[q.a,...(q.alt||[])].map(v=>v.filter((w,i)=>p[i]===w.toLowerCase()).length/v.length))}
+}
+const correctText=q=>q.t==="mc"?q.o[q.a]:q.t==="multi"?q.a.map(i=>q.o[i]).join(", "):q.t==="type"?q.a[0]:q.t==="num"?String(q.a):q.a.join(" ")+(q.alt?" (also: "+q.alt.map(v=>v.join(" ")).join(" / ")+")":"");
+let S=null,timer=null,RM=null;
+const trackHTML=mi=>{const p=Math.min(100,mi/TOTAL*100);return `<div class="track" role="img" aria-label="Train journey: ${Math.min(mi,TOTAL)} of ${TOTAL} miles from London to Edinburgh"><div class="scene"></div>${ROUTE.map(([n,m])=>`<i class="stn" style="left:${m/TOTAL*100}%"></i>`).join('')}<b style="left:${p}%">🚂</b></div><div class="ends"><span>London</span><span>${Math.min(mi,TOTAL)} / ${TOTAL} miles</span><span>Edinburgh</span></div>`};
+const trainHTML=(res,all)=>`<div class='train' aria-label='Your train'><span style='font-size:1.5rem'>🚂</span>${res.map((r,i)=>`<span class='cx ${r.c}${all||i===res.length-1?' new':''}' style='animation-delay:${all?i*.15:0}s'></span>`).join('')}</div>`;
+
+function home(){
+ let d=null;try{d=JSON.parse(store("cc_daily"))}catch(e){}
+ if(d&&d.date===today())return result(d.res,true);
+ app.innerHTML=`<h1>Clickety-Clack</h1><p class="mute">The daily English train quiz for beginners (A1–B1)</p>
+ <div class="card"><h2>How to play</h2><ul>
+ <li>Every day a new train leaves London with <b>7 questions</b>. Everybody gets the same questions on the same day. You can play the daily train <b>once</b>. The questions get harder: 2 at A1, 3 at A2 and 2 at B1.</li>
+ <li>Every answer gives you <b>miles</b>: up to 45 for an A1 question, 60 for A2 and 75 for B1. London to Edinburgh is ${TOTAL} miles.</li><li><b>Bonus miles:</b> answer fast and get up to +8 <b>speed</b> miles. From your third good answer in a row, you earn +8 <b>streak</b> miles each time.</li>
+ <li>A weak answer makes the train <b>late</b>: up to ${MAXDELAY} minutes per question.</li>
+ <li>A good answer adds a <b>carriage</b>: green is a passenger carriage (very good), yellow is a freight carriage (OK).</li>
+ <li>You have 20–35 seconds for each question.</li></ul>
+ <h2>Kinds of questions</h2><ul><li><b>Pick one</b> answer from four.</li><li><b>Pick all</b> the correct answers. A wrong choice takes points away.</li><li><b>Type</b> the answer. Small spelling mistakes are OK.</li><li><b>Number</b>: the closer you are, the more miles you get.</li><li><b>Put in order</b>: tap the words in the right order.</li></ul></div>
+ <div class="row"><button class="main" id="go">Start today’s train</button><button id="pr">Practice (random questions)</button></div>`;
+ $('#go').onclick=()=>{SFX.whistle();start(false)};$('#pr').onclick=()=>{SFX.whistle();start(true)};
+}
+function start(practice,th,seed,cls,sub,mp){
+ const r=rng(seed||(practice?String(Math.random()):'cc'+today()));
+ S={qs:pickQs(th,r,sub),i:0,res:[],practice,r,cls,th,sub,mp};show();
+}
+function show(){
+ clearInterval(timer);
+ const q=S.qs[S.i],total=TIME[q.t],mi=S.res.reduce((a,x)=>a+x.mi,0);
+ let pick=q.t==="multi"?[]:null,seq=[],pool=q.t==="order"?shuffle(q.a.map((w,i)=>i),S.r):[],left=total,done=false;
+ const body=()=>{
+  if(q.t==="mc"||q.t==="multi")return `<div class="opts" role="group">${q.o.map((o,i)=>`<button data-i="${i}" ${q.t==="multi"?'aria-pressed="false"':""}>${o}</button>`).join("")}</div>`;
+  if(q.t==="type")return `<input id="ti" autocomplete="off" autocapitalize="none" spellcheck="false" aria-label="Your answer">`;
+  if(q.t==="num")return `<input id="ti" type="number" inputmode="decimal" aria-label="Your number">`;
+  return `<div class="slot" id="seq" aria-label="Your answer"></div><div class="row" id="pool"></div>`;
+ };
+ app.innerHTML=`<div class="mute"><span class="lv">${q.lv}</span>Question ${S.i+1} of ${S.qs.length} · ${TN[q.th]}${q.sub?` / ${SUBLABEL[q.sub]||q.sub}`:""} · ${LABEL[q.t]}${S.cls?' · class '+S.cls.code:S.mp?' · multiplayer':S.practice?' · practice':''}</div>
+ <div class="bar"><i id="tb"></i></div>${S.mp&&MP?'<div id="mb" class="mb"></div>':''}${trackHTML(mi)}
+ <div class="card ticket"><h2>${q.q}${TTS?' <button class="chip lis" id="ls" aria-label="Listen to the question">🔊</button>':''}</h2>${body()}<div id="fb"></div><div class="row"><button class="main" id="ok">Answer</button></div></div>`;
+ const getAns=()=>q.t==="multi"?pick:q.t==="mc"?pick:q.t==="order"?seq.map(i=>q.a[i]):($("#ti")||{}).value;
+ const drawOrder=()=>{
+  $("#seq").innerHTML=seq.map(i=>`<button class="chip main" data-s="${i}">${q.a[i]}</button>`).join("");
+  $("#pool").innerHTML=pool.filter(i=>!seq.includes(i)).map(i=>`<button class="chip" data-p="${i}">${q.a[i]}</button>`).join("");
+  $("#seq").querySelectorAll("button").forEach(b=>b.onclick=()=>{if(done)return;seq.splice(seq.indexOf(+b.dataset.s),1);drawOrder()});
+  $("#pool").querySelectorAll("button").forEach(b=>b.onclick=()=>{if(done)return;seq.push(+b.dataset.p);drawOrder()});
+ };
+ if(q.t==="order")drawOrder();
+ if($("#ls"))$("#ls").onclick=()=>speak(q.q);
+ if(S.mp)mpRefresh();
+ if(q.t==="mc"||q.t==="multi")app.querySelectorAll(".opts button").forEach(b=>b.onclick=()=>{
+  if(done)return;SFX.click();const i=+b.dataset.i;
+  if(q.t==="mc"){pick=i;app.querySelectorAll(".opts button").forEach(x=>x.classList.toggle("on",x===b))}
+  else{const k=pick.indexOf(i);k<0?pick.push(i):pick.splice(k,1);b.classList.toggle("on",k<0);b.setAttribute("aria-pressed",k<0)}
+ });
+ const ti=$("#ti");if(ti){ti.focus();ti.onkeydown=e=>{if(e.key==="Enter")submit()}}
+ function submit(){
+  if(done)return;done=true;clearInterval(timer);
+  const sc=score(q,getAns()),spd=sc>=.8?Math.round(8*Math.max(0,left)/total):0,stk=sc>=.8&&S.res.length>1&&S.res.slice(-2).every(x=>x.c==='good')?8:0,mi2=Math.round(LV[q.lv]*sc)+spd+stk,delay=Math.round(MAXDELAY*(1-sc)),c=sc>=.8?'good':sc>=.4?'mid':'none';
+  S.res.push({mi:mi2,delay,c,sc,lv:q.lv,sub:q.sub,th:q.th,q:q.q,ya:ansText(q,getAns()),ca:correctText(q),spd,stk,tm:Math.round(total-Math.max(0,left))});
+  if(S.mp){const st=stats(S.res);mpSend({t:'progress',i:S.res.length,mi:st.mi,late:st.late,sq:S.res.map(r=>r.c[0]).join('')})}
+  if(q.t==="mc"||q.t==="multi")app.querySelectorAll(".opts button").forEach(b=>{const i=+b.dataset.i,right=q.t==="mc"?i===q.a:q.a.includes(i),chosen=q.t==="mc"?pick===i:pick.includes(i);b.classList.remove("on");if(right)b.classList.add("ok");else if(chosen)b.classList.add("no");b.disabled=true});
+  if(ti)ti.disabled=true;
+  const fs=fullSentence(q),tp=c!=="good"?tip(q.sub):"",last=S.i===S.qs.length-1,msg=c==="good"?"Great!":c==="mid"?"Not bad.":"Not this time.";
+  $("#fb").innerHTML=`<div class="fb ${c}"><b>${msg}</b> +${mi2} miles${spd||stk?` (${[spd&&'speed +'+spd,stk&&'streak +'+stk].filter(Boolean).join(', ')})`:''} · ${delay} min late<br><span class="mute">Correct answer: ${correctText(q)}</span>${fs?`<br><span class="fs">✔ ${esc(fs)}</span>${TTS?` <button class="chip lis" data-say="${esc(fs)}" aria-label="Listen to the sentence">🔊</button>`:""}`:""}</div>${tp?`<div class="tip">💡 ${esc(tp)}</div>`:""}`;
+  $('#fb').insertAdjacentHTML('beforeend',trainHTML(S.res));app.querySelectorAll('[data-say]').forEach(b=>b.onclick=()=>speak(b.dataset.say));const cd=$('.card');if(c==='none'){cd.classList.add('shake');SFX.bad()}else{cd.classList.add('pop');c==='good'?SFX.good():SFX.mid()}adv(mi+mi2);SFX.clack(2);
+  const b=$("#ok");b.textContent=last?"See your journey":"Next question";b.disabled=false;
+  b.onclick=()=>{if(last)finish();else{S.i++;show()}};b.focus();
+ }
+ $("#ok").onclick=submit;
+ let lt=99;timer=setInterval(()=>{left-=.1;$('#tb').style.width=Math.max(0,left/total*100)+'%';const s=Math.ceil(left);if(left<=5&&left>0&&s!==lt){lt=s;SFX.tick()}if(left<=0)submit()},100);
+}
+const TTS=typeof speechSynthesis!=='undefined'&&typeof SpeechSynthesisUtterance!=='undefined';
+function speak(t){if(!TTS)return;try{const u=new SpeechSynthesisUtterance(String(t).replace(/_{3,}/g,'blank'));u.lang='en-GB';u.rate=.9;speechSynthesis.cancel();speechSynthesis.speak(u)}catch(e){}}
+const LESSON={
+'g-ps':'We use the present simple for habits and facts. Add -s or -es for he, she and it. Use do/does for questions and don’t/doesn’t for negatives.|She works in a bank.|Do you like tea?|He doesn’t play football.',
+'g-pc':'We use the present continuous for actions happening now. Form: am/is/are + verb-ing. Time words: now, at the moment, today.|I am reading a book.|They are not sleeping.|What are you doing?',
+'g-pm':'Present simple = habits, facts, timetables (always, every day). Present continuous = now or temporary (now, today, at the moment).|I usually walk to work, but today I am taking the bus.|Water boils at 100 degrees.|She studies French every Tuesday.',
+'g-tobe':'Use am with I, is with he/she/it and are with you/we/they. Negative: add not (isn’t, aren’t). For questions, put the verb first. Past: was/were.|I am a student.|Is there a bank near here?|We were at the cinema yesterday.',
+'g-past':'The past simple is for finished actions in the past. Regular verbs add -ed. Irregular verbs change (go – went, buy – bought). Use did + base verb for questions and negatives.|I watched a film last night.|She didn’t know the answer.|Did you go out?',
+'g-pp':'The past participle is the third form of the verb (eat – ate – eaten). Use it with have/has for the present perfect (experience, results) and with be for the passive.|Have you ever eaten sushi?|The report was written by the manager.|She has worked here since 2019.',
+'g-cond':'Zero: if + present, present (facts). First: if + present, will (real future). Second: if + past, would (imaginary). Third: if + past perfect, would have + past participle (the past, impossible now).|If you heat ice, it melts.|If it rains, we will stay at home.|If I were rich, I would travel the world.|If she had studied, she would have passed.',
+'g-modal':'Modal verbs (can, must, should, could) are followed by the base verb without to. can = ability, must = strong obligation, mustn’t = forbidden, should = advice, could = polite request. Don’t have to = not necessary.|I can swim.|You mustn’t park here.|You should go to bed early.',
+'g-comp':'Short adjectives: -er than and the -est (slow, slower, slowest). Long adjectives: more … than and the most …. Irregular: good, better, best.|A bike is slower than a car.|She is more intelligent than her brother.|This is the best film I have seen.',
+'g-art':'Use a/an with one countable noun (an before a vowel sound). Use much with uncountable nouns and many with countable nouns. A few / a little = some. Few / little = not enough. Use any in questions and negatives.|She has an orange.|How much sugar do you want?|There aren’t any chairs.',
+'g-prep':'Time: at (clock times), on (days and dates), in (months and years). Learn fixed phrases: good at, interested in, afraid of.|The lesson starts at nine o’clock.|We meet on Mondays.|She is good at maths.',
+'g-quest':'Question words: what, where, when, who, why, how. After the question word use do/does/did + subject + base verb. After did, never use the past form.|Where did she go yesterday?|What time do you get up?|How much does it cost?',
+'v-sport':'Play + ball games (play tennis). Go + -ing sports (go swimming). Places: pitch (football), court (tennis), pool, track. People: player, referee, coach, spectator.|You play football on a pitch.|The referee blows the whistle.|A helmet protects your head.',
+'v-daily':'Daily routine: get up, brush your teeth, have breakfast, go to work. We do the dishes, do the housework, make the bed and take a shower. Chores are jobs at home.|I brush my teeth every morning.|I do the dishes after dinner.',
+'v-clothes':'Shoes, boots and sandals go on your feet. Gloves go on your hands. A scarf and a hat keep you warm. Clothes fit you (size) and suit you (style).|Put on your coat. It is cold.|This jacket doesn’t fit me.',
+'v-home':'Rooms: kitchen, bathroom, bedroom, living room. Furniture: bed, sofa, armchair, table, wardrobe, bookcase, chest of drawers. Windows and curtains are not furniture.|You cook in the kitchen.|You keep your clothes in the wardrobe.',
+'v-food':'Food groups: vegetables (carrot), fruit (apple), dairy (milk, cheese, yoghurt), grains (bread, rice). Meals: breakfast, lunch, dinner.|Bread is made from flour.|Milk is a dairy product.',
+'v-family':'Aunt and uncle = your parents’ sister and brother. Cousin = their child. Niece and nephew = the daughter and son of your brother or sister. In-law = your husband’s or wife’s family.|My mother’s sister is my aunt.|My husband’s mother is my mother-in-law.',
+'v-jobs':'Jobs: nurse, pilot, chef, farmer, mechanic, teacher. Salary = the money you get every month from your job. At school we have teachers, students, subjects and homework.|A nurse works in a hospital.|A pilot flies a plane.',
+'v-desc':'Adjectives describe nouns. Learn opposites in pairs: big – small, cheap – expensive, increase – decrease. Stronger words: delighted = very happy, huge / enormous / vast = very big.|The opposite of cheap is expensive.|I was delighted to see you.',
+'e-daily':'Telling the time: half past seven = 7:30; a quarter past = :15; a quarter to = :45. Days: Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday.|It is half past seven.|8:45 is a quarter to nine.',
+'e-shop':'Shopping phrases: How much is it? Can I pay by card? Here is your change and your receipt. A pharmacy sells medicine; a bakery sells bread.|How much is this T-shirt?|Can I pay by card, please?',
+'e-food':'Restaurant English: Can I see the menu, please? I’d like a coffee, please. Could we have the bill? A tip is extra money for the waiter.|I’d like a coffee, please.|Could we have the bill, please?',
+'e-travel':'Travel English: Where is the station? How do I get to the museum? The flight was delayed. You show your passport at the airport.|How do I get to the museum?|The train is delayed.',
+'e-social':'Polite English: Could I have …? Would you mind …? Thank you – You’re welcome. On the phone: “Can I speak to Anna?” – “Speaking.”|Could I have some water, please?|Would you mind opening the window?',
+'w-uk':'The UK has four countries: England, Scotland, Wales and Northern Ireland. London is in England and Big Ben is in London. The Severn is the longest river in the UK. English is spoken in many countries.|Big Ben is in London.|Edinburgh is in Scotland.',
+'w-geo':'Capitals: London (the UK), Paris (France), Berlin (Germany), Rome (Italy), Canberra (Australia). The Atlantic Ocean is between Europe and America.|Berlin is the capital of Germany.|Rome is in Italy.',
+'w-facts':'Useful numbers: 60 seconds = 1 minute, 24 hours = 1 day, 7 days = 1 week (168 hours). The English alphabet has 26 letters. April, June, September and November have 30 days.|There are seven days in a week.|A week has one hundred and sixty-eight hours.',
+'w-culture':'Christmas is on 25 December. Bonfire Night is on 5 November. On Valentine’s Day people give cards and flowers. Afternoon tea and a roast dinner on Sunday are British traditions.|We celebrate Christmas on the twenty-fifth of December.|A roast dinner is traditional on Sundays.'};
+function lesson(sub){const p=(LESSON[sub]||'').split('|');return {rule:p[0]||'',ex:p.slice(1)}}
+function tip(sub){const r=lesson(sub).rule;return r}
+function fullSentence(q){try{const b=/_{3}/;if(q.t==='order')return q.a.join(' ')+'.';if(!b.test(q.q)||(q.t!=='mc'&&q.t!=='type'))return '';const w=q.t==='mc'?q.o[q.a]:q.a[0],m=q.q.match(/“([^”]*_{3}[^”]*)”/),base=m&&m[1].replace(/_/g,'').trim().length>2?m[1]:q.q;const o=base.replace(/_{3}/,w);return /^_{3}/.test(base)?o.charAt(0).toUpperCase()+o.slice(1):o}catch(e){return ''}}
+function prog(){try{return JSON.parse(store('cc_prog'))||{}}catch(e){return {}}}
+function wrongQs(){let W=[];try{W=JSON.parse(store('cc_wrong'))||[]}catch(e){}return Q.filter(q=>W.includes(q.q))}
+function trackProg(res){const P=prog();let W=[];try{W=JSON.parse(store('cc_wrong'))||[]}catch(e){}
+ res.forEach(r=>{if(r.sub){const b=P[r.sub]||(P[r.sub]={n:0,s:0});b.n++;b.s+=r.sc;if(b.n>30){b.n*=.8;b.s*=.8}}if(r.q){W=W.filter(x=>x!==r.q);if(r.c!=='good')W.push(r.q)}});
+ store('cc_prog',JSON.stringify(P));store('cc_wrong',JSON.stringify(W.slice(-60)))}
+function lessonScreen(sub,th){
+ const L=lesson(sub);if(!L.rule){start(true,th,undefined,undefined,sub);return}
+ app.innerHTML=`<div class="section-kicker">📖 Mini lesson</div><h1>${esc(SUBLABEL[sub])}</h1><div class="card"><h2>Remember</h2><p>${esc(L.rule)}</p><h3>Examples</h3><ul class="exl">${L.ex.map(e=>`<li>${esc(e)}${TTS?` <button class="chip lis" data-say="${esc(e)}" aria-label="Listen">🔊</button>`:''}</li>`).join('')}</ul></div><div class="row"><button class="main" id="sq">Start quiz →</button><button id="bk">Back</button></div>`;
+ app.querySelectorAll('[data-say]').forEach(b=>b.onclick=()=>speak(b.dataset.say));
+ $('#sq').onclick=()=>{SFX.whistle();start(true,th,undefined,undefined,sub)};$('#bk').onclick=menu;
+}
+function topicLabel(){return S.sub?(S.sub==='__wrong'?'My mistakes':TN[S.th]+' / '+SUBLABEL[S.sub]):(!S.th||S.th==='M')?'Mixed topics':TN[S.th]}
+function ansText(q,a){try{if(q.t==='mc')return a==null?'—':q.o[a];if(q.t==='multi')return a&&a.length?a.map(i=>q.o[i]).join(', '):'—';if(q.t==='order')return a&&a.length?a.join(' '):'—';return String(a||'').trim()||'—'}catch(e){return '—'}}
+function finish(){
+ RM={name:S.cls?S.cls.n:(store('cc_name')||''),mode:S.cls?'Class game '+S.cls.code:S.mp?'Multiplayer':S.practice?'Practice':'Daily challenge',topic:topicLabel(),date:today()};
+ if(!S.practice){store('cc_daily',JSON.stringify({date:today(),res:S.res,meta:RM}));bumpStreak()}
+ trackProg(S.res);result(S.res,false,S.practice);if(S.cls)clsDone();if(S.mp)mpFinish();
+}
+function stats(res){
+ const n=res.length,mi=Math.min(TOTAL,res.reduce((a,x)=>a+x.mi,0)),late=res.reduce((a,x)=>a+x.delay,0),good=res.filter(r=>r.c==='good').length,mid=res.filter(r=>r.c==='mid').length,
+ acc=n?Math.round(100*res.reduce((a,x)=>a+x.sc,0)/n):0,spd=res.reduce((a,x)=>a+(x.spd||0),0),stk=res.reduce((a,x)=>a+(x.stk||0),0),secs=res.reduce((a,x)=>a+(x.tm||0),0);
+ let st=ROUTE[0][0];for(const [nm,m] of ROUTE)if(mi>=m)st=nm;
+ const by={},subs={};
+ res.forEach(r=>{if(r.lv){const b=by[r.lv]||(by[r.lv]={n:0,s:0});b.n++;b.s+=r.sc}if(r.sub){const b=subs[r.sub]||(subs[r.sub]={n:0,s:0});b.n++;b.s+=r.sc}});
+ const sl=Object.entries(subs).map(([k,v])=>({k,p:v.s/v.n,n:v.n})).sort((a,b)=>b.p-a.p);
+ return {n,mi,late,good,mid,acc,spd,stk,secs,st,by,sl,arrived:mi>=TOTAL};
+}
+function reportHTML(res,st,m,name){
+ const nm=k=>SUBLABEL[k]||k,strong=st.sl.filter(x=>x.p>=.8).map(x=>nm(x.k)),weak=st.sl.filter(x=>x.p<.6).map(x=>nm(x.k));
+ const study=st.sl.filter(x=>x.p<.6).slice(0,2).map(x=>`<div class="study"><b>${esc(nm(x.k))}</b><p>${esc(tip(x.k))}</p><button data-study="${x.k}">Learn &amp; practise →</button></div>`).join('');
+ const lvRows=['A1','A2','B1'].map(l=>{const b=st.by[l];if(!b)return '';const p=Math.round(100*b.s/b.n);return `<tr><td><span class="lv">${l}</span></td><td>${b.n} q</td><td>${p}%</td><td><span class="pb"><i style="width:${p}%"></i></span></td></tr>`}).join('');
+ const rows=res.some(r=>r.q)?`<ol class="qlist">${res.map(r=>`<li class="q-${r.c}"><div class="qh"><span class="lv">${r.lv||''}</span><span>${esc(r.q||'')}</span></div><div class="qa">Your answer: <b>${esc(r.ya||'—')}</b></div>${r.c==='good'?'':`<div class="qa">Correct answer: <b>${esc(r.ca||'')}</b></div>`}<div class="mute">${r.sub?esc(nm(r.sub))+' · ':''}+${r.mi} miles${r.spd||r.stk?' (bonus '+((r.spd||0)+(r.stk||0))+')':''} · ${r.delay} min late · ${r.tm||0} s</div></li>`).join('')}</ol>`:'<p class="mute">Question details are not available for this saved result.</p>';
+ const msg=st.arrived?'Excellent English! Every carriage counts.':st.mi>=250?'Very good journey. Try again tomorrow!':st.mi>=120?'Good start. Practise a little more and go further.':'Every journey starts at the first station. Try practice mode!';
+ return `<section class="card report" id="rep"><div class="section-kicker">Journey report</div><h2>Report for <span id="rn">${esc(name||'Player')}</span></h2>
+ <label for="pn">Player name</label><input id="pn" maxlength="24" value="${esc(name)}" placeholder="Type your name">
+ <p class="mute rep-meta">${[m.mode,m.topic,m.date].filter(Boolean).map(esc).join(' · ')}</p>
+ <div class="kpis"><div class="kpi"><b>${st.mi}</b><span>of ${TOTAL} miles</span></div><div class="kpi"><b>${st.acc}%</b><span>accuracy</span></div><div class="kpi"><b>${st.late}</b><span>min late</span></div><div class="kpi"><b>${st.good}/${st.n}</b><span>good answers</span></div></div>
+ <p><b>${st.arrived?'Arrived in Edinburgh.':'Last station: '+esc(st.st)+'.'}</b> Bonus miles: speed +${st.spd}, streak +${st.stk}. Total answer time: ${st.secs} s. Carriages: ${st.good} passenger, ${st.mid} freight.</p><p>${msg}</p>
+ ${lvRows?`<h3>Accuracy by level</h3><table class="rt">${lvRows}</table>`:''}
+ ${st.sl.length?`<h3>Topics</h3><p><b>Strong:</b> ${strong.length?strong.map(esc).join(', '):'—'}<br><b>Practise more:</b> ${weak.length?weak.map(esc).join(', '):'— nothing, great job!'}</p>${study}`:''}
+ <h3>Your answers</h3>${rows}</section>`;
+}
+async function makeImage(res,m){
+ const st=stats(res),W=1080,H=1560,c=document.createElement('canvas');c.width=W;c.height=H;const g=c.getContext('2d');
+ try{await document.fonts.load('800 80px "Barlow Condensed"');await document.fonts.load('600 30px "Barlow"')}catch(e){}
+ const HF='"Barlow Condensed","Arial Narrow",sans-serif',BF='"Barlow","Trebuchet MS",sans-serif',NAVY='#14365c',YEL='#ffd23f',MU='#5a7088';
+ const rr=(x,y,w,h,r)=>{g.beginPath();g.moveTo(x+r,y);g.arcTo(x+w,y,x+w,y+h,r);g.arcTo(x+w,y+h,x,y+h,r);g.arcTo(x,y+h,x,y,r);g.arcTo(x,y,x+w,y,r);g.closePath()};
+ const fit=(t,f,mw)=>{g.font=f;if(g.measureText(t).width<=mw)return t;while(t.length>1&&g.measureText(t+'…').width>mw)t=t.slice(0,-1);return t+'…'};
+ const T=(t,x,y,f,col,al)=>{g.font=f;g.fillStyle=col;g.textAlign=al||'left';g.fillText(t,x,y)};
+ const gr=g.createLinearGradient(0,0,0,H);gr.addColorStop(0,'#bfe0f5');gr.addColorStop(1,'#e9f2f8');g.fillStyle=gr;g.fillRect(0,0,W,H);
+ g.fillStyle=YEL;g.beginPath();g.arc(930,110,46,0,7);g.fill();
+ g.fillStyle='#94c9a4';g.beginPath();g.ellipse(180,300,520,150,0,0,7);g.fill();
+ g.fillStyle='#6fb08c';g.beginPath();g.ellipse(860,310,480,130,0,0,7);g.fill();
+ T('Clickety-Clack',60,150,'800 108px '+HF,NAVY);T('Daily English train quiz · A1–B1',64,205,'600 32px '+BF,'#3b5878');
+ g.fillStyle=NAVY;rr(40,290,988,1200,34);g.fill();g.fillStyle='#fff';rr(40,280,988,1200,34);g.fill();g.lineWidth=5;g.strokeStyle=NAVY;g.stroke();
+ T(fit(m.name||'Player','800 84px '+HF,900),80,385,'800 84px '+HF,NAVY);
+ T(fit([m.mode,m.topic,m.date].filter(Boolean).join(' · '),'600 28px '+BF,900),82,430,'600 28px '+BF,MU);
+ T(String(st.mi),80,640,'800 220px '+HF,NAVY);g.font='800 220px '+HF;const mw=g.measureText(String(st.mi)).width;
+ T('/ '+TOTAL+' miles',80+mw+20,640,'700 52px '+BF,MU);
+ T(st.arrived?'Arrived in Edinburgh!':'Reached '+st.st,80,710,'700 46px '+BF,st.arrived?'#1f9d57':NAVY);
+ const x0=90,x1=990,ty=800;g.lineCap='round';g.lineWidth=10;g.strokeStyle='#c6d6e4';g.beginPath();g.moveTo(x0,ty);g.lineTo(x1,ty);g.stroke();
+ const px=x0+(x1-x0)*Math.min(1,st.mi/TOTAL);g.strokeStyle='#1f9d57';g.beginPath();g.moveTo(x0,ty);g.lineTo(px,ty);g.stroke();
+ ROUTE.forEach(([n,mm])=>{const sx=x0+(x1-x0)*mm/TOTAL;g.fillStyle='#fff';g.strokeStyle=NAVY;g.lineWidth=5;g.beginPath();g.arc(sx,ty,11,0,7);g.fill();g.stroke()});
+ g.fillStyle=YEL;g.strokeStyle=NAVY;g.lineWidth=6;g.beginPath();g.arc(px,ty,22,0,7);g.fill();g.stroke();
+ T('London',x0,850,'600 26px '+BF,MU);T('Edinburgh',x1,850,'600 26px '+BF,MU,'right');
+ let tx=80;const tY=900;g.fillStyle=NAVY;rr(tx,tY,86,56,10);g.fill();g.fillRect(tx+60,tY-22,16,24);g.fillStyle='#fff';g.fillRect(tx+14,tY+10,22,18);tx+=100;
+ res.forEach(r=>{g.fillStyle=r.c==='good'?'#1f9d57':r.c==='mid'?'#e5a100':'#fff';rr(tx,tY+4,88,48,8);g.fill();g.lineWidth=4;g.setLineDash(r.c==='none'?[8,6]:[]);g.strokeStyle=NAVY;g.stroke();g.setLineDash([]);tx+=96});
+ [[st.acc+'%','Accuracy'],[st.good+' / '+st.n,'Good answers'],[st.late+' min','Delay']].forEach(([v,l],i)=>{const x=80+i*315;g.fillStyle='#f4f8fb';rr(x,990,290,150,22);g.fill();g.lineWidth=4;g.strokeStyle=NAVY;g.stroke();T(v,x+145,1075,'800 70px '+HF,NAVY,'center');T(l,x+145,1115,'600 26px '+BF,MU,'center')});
+ let ly=1195;T('Accuracy by level',80,ly,'700 30px '+BF,NAVY);ly+=18;
+ ['A1','A2','B1'].forEach(l=>{const b=st.by[l],p=b?b.s/b.n:0;T(l,80,ly+34,'700 28px '+BF,NAVY);g.fillStyle='#c6d6e4';rr(150,ly+12,700,26,13);g.fill();if(b){g.fillStyle='#1f9d57';rr(150,ly+12,Math.max(26,700*p),26,13);g.fill()}T(b?Math.round(p*100)+'%':'–',880,ly+34,'700 28px '+BF,NAVY);ly+=46});
+ const nm=k=>SUBLABEL[k]||k,strong=st.sl.filter(x=>x.p>=.8).map(x=>nm(x.k)).slice(0,3).join(', '),weak=st.sl.filter(x=>x.p<.6).map(x=>nm(x.k)).slice(0,3).join(', ');
+ T(fit('Strong: '+(strong||'keep going!'),'600 28px '+BF,900),80,1395,'600 28px '+BF,'#1f7a49');
+ T(fit('Practise: '+(weak||'nothing, great job!'),'600 28px '+BF,900),80,1440,'600 28px '+BF,'#b3261e');
+ T('Clickety-Clack · London → Edinburgh',W/2,1535,'700 30px '+BF,NAVY,'center');
+ return c;
+}
+async function saveImg(cv,m,msg){
+ const fn='clickety-clack-'+((m.name||'result').replace(/[^\w-]+/g,'-'))+'.png';
+ try{const bl=await new Promise(r=>cv.toBlob(r,'image/png'));const a=document.createElement('a');a.href=URL.createObjectURL(bl);a.download=fn;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),4000);msg.textContent='Saved to your downloads.'}catch(e){msg.textContent='To save it: press and hold the image (or right-click it) and choose “Save image”.'}
+}
+function result(res,again,practice){
+ clearInterval(timer);RM=RM||{};
+ const st=stats(res),mi=st.mi,m=RM,name=m.name||store('cc_name')||'';
+ const head=st.arrived?'You arrived in Edinburgh!':'Your train stopped near '+st.st+'.';
+ const sq=res.map(r=>r.c==='good'?'🟩':r.c==='mid'?'🟨':'⬛').join('');
+ const txt=`Clickety-Clack 🚂 ${name?name+' · ':''}${practice?'practice':today()}\n${sq}\n${mi}/${TOTAL} miles · ${st.late} min late · ${st.acc}% accuracy`;
+ app.innerHTML=`<h1>${head}</h1><p class="mute">${mi} of ${TOTAL} miles · ${st.late} minutes late${again?' · you have played today’s train':''}</p>
+ ${trackHTML(0)}${trainHTML(res,1)}
+ <div class="row" style="margin:14px 0 8px"><button class="main" id="mk">📷 Create image</button><button id="sh">Copy my result</button><button id="mn">Menu</button><button id="pr">Practice</button></div><p class="mute" id="msg" role="status"></p><div id="imgbox"></div>
+ ${reportHTML(res,st,m,name)}
+ <p class="mute">A new train leaves at midnight.</p>`;
+ $('#pr').onclick=()=>{SFX.whistle();start(true)};
+ app.querySelectorAll('[data-study]').forEach(b=>b.onclick=()=>{const k=b.dataset.study;lessonScreen(k,k[0].toUpperCase())});
+ $('#mn').onclick=menu;setTimeout(()=>{adv(mi);SFX.clack(3)},350);setTimeout(()=>{if(st.arrived){SFX.fanfare();confetti()}else SFX.whistle()},1800);
+ $('#pn').oninput=e=>{const v=e.target.value.trim().slice(0,24);store('cc_name',v);RM=Object.assign(RM||{},{name:v});$('#rn').textContent=v||'Player'};
+ $('#mk').onclick=async()=>{const b=$('#mk');b.disabled=true;b.textContent='Creating…';const cv=await makeImage(res,RM||{});b.disabled=false;b.textContent='📷 Create image again';
+  $('#imgbox').innerHTML=`<div class="card"><h2>Your result image</h2><img src="${cv.toDataURL('image/png')}" alt="Summary of your journey" style="width:100%;border-radius:12px"><div class="row" style="margin-top:10px"><button class="main" id="dl">Download image</button></div><p class="mute" id="imsg" role="status"></p></div>`;
+  $('#dl').onclick=()=>saveImg(cv,RM||{},$('#imsg'));$('#imgbox').scrollIntoView({behavior:'smooth',block:'nearest'})};
+ $('#sh').onclick=()=>{let ok=false;try{navigator.clipboard.writeText(txt).then(()=>$('#msg').textContent='Copied!',()=>$('#msg').textContent=txt.replace(/\n/g,' | '));ok=true}catch(e){}if(!ok)$('#msg').textContent=txt.replace(/\n/g,' | ')};
+}
+/* ===== Multiplayer (WebSocket rooms) ===== */
+let MP=null;
+const SSX={get(){try{return JSON.parse(sessionStorage.getItem('cc_mp'))}catch(e){return null}},set(v){try{v?sessionStorage.setItem('cc_mp',JSON.stringify(v)):sessionStorage.removeItem('cc_mp')}catch(e){}}};
+const SQE={g:'🟩',m:'🟨',n:'⬛'};
+function mpOpen(first){
+ const ws=new WebSocket((location.protocol==='https:'?'wss://':'ws://')+location.host+'/ws');
+ ws.onopen=()=>ws.send(JSON.stringify(first));
+ ws.onmessage=e=>{let m;try{m=JSON.parse(e.data)}catch(x){return}mpMsg(m)};
+ ws.onclose=()=>{if(!MP||MP.ws!==ws)return;MP.ws=null;if(MP.left)return;
+  if(MP.id){MP.tries=(MP.tries||0)+1;if(MP.tries<30)setTimeout(()=>{if(MP&&!MP.ws&&!MP.left)mpOpen({t:'rejoin',code:MP.code,id:MP.id,token:MP.token})},Math.min(5000,800*MP.tries))}
+  else{MP=null;const e=$('#merr');if(e)e.textContent='Could not connect to the game server. Please try again.'}};
+ ws.onerror=()=>{};
+ if(MP&&MP.id)MP.ws=ws;else MP={ws};
+}
+function mpSend(o){if(MP&&MP.ws&&MP.ws.readyState===1)MP.ws.send(JSON.stringify(o))}
+function mpLeave(){if(MP){MP.left=true;mpSend({t:'leave'});try{MP.ws&&MP.ws.close()}catch(e){}}MP=null;SSX.set(null);clearInterval(timer);S=null;menu()}
+function mpMsg(m){
+ if(m.t==='joined'){
+  MP.id=m.id;MP.token=m.token;MP.host=m.host;MP.spec=m.spec;MP.code=m.room.code;MP.room=m.room;MP.tries=0;
+  SSX.set({code:MP.code,id:MP.id,token:MP.token});
+  if(location.hash)try{history.replaceState(null,'',location.pathname+location.search)}catch(e){}
+  const me=m.room.players.find(p=>p.id===m.id);
+  if(m.room.state==='lobby')mpLobby();
+  else if(MP.spec)mpHostBoard();
+  else if(me&&me.done&&!(S&&S.mp))mpDoneScreen();
+  else if(m.room.state==='playing'&&!(S&&S.mp))mpBegin(m.room);
+  else mpRefresh();
+  return}
+ if(m.t==='room'){if(!MP||MP.left)return;MP.room=m.room;mpRefresh();return}
+ if(m.t==='start'){if(!MP||!MP.room||MP.round===m.round)return;Object.assign(MP.room,{state:'playing',round:m.round,seed:m.seed,theme:m.theme,sub:m.sub});MP.spec?mpHostBoard():mpBegin(MP.room);return}
+ if(m.t==='lobby'){if(!MP)return;MP.room=m.room;MP.round=null;clearInterval(timer);S=null;mpLobby();return}
+ if(m.t==='kicked'){if(MP){MP.left=true;try{MP.ws.close()}catch(e){}}MP=null;SSX.set(null);clearInterval(timer);S=null;menu();return}
+ if(m.t==='err'){const had=MP&&MP.id;if(!had){try{MP&&MP.ws&&MP.ws.close()}catch(e){}MP=null;SSX.set(null)}const e=$('#merr');if(e)e.textContent=m.msg;else if(!had)menu();return}
+}
+function mpBegin(room){MP.round=room.round;clearInterval(timer);start(true,room.theme,room.seed,undefined,room.sub,true);mpSend({t:'progress',i:0,mi:0,late:0,sq:''})}
+function boardRows(r,max){
+ return r.players.slice(0,max).map((p,i)=>`<div class="brow${p.id===MP.id?' me':''}${p.online?'':' off'}"><span class="rk">${i+1}</span><span class="nm">${esc(p.name)}${p.id===MP.id?' (you)':''}</span><span class="pbar"><i style="width:${Math.round(100*p.mi/TOTAL)}%"></i></span><span class="mi">${p.mi} mi</span><span class="sq">${(p.sq||'').split('').map(c=>SQE[c]||'').join('')}${p.done?' ✓':''}</span></div>`).join('')||'<p class="mute">No players yet.</p>';
+}
+function mpRefresh(){
+ const r=MP&&MP.room;if(!r)return;
+ if($('#pl')){$('#pc').textContent='('+r.players.length+')';
+  $('#pl').innerHTML=r.players.map(p=>`<li class="${p.online?'':'off'}">${p.host?'👑 ':''}${esc(p.name)}${p.id===MP.id?' (you)':''}${MP.host&&p.id!==MP.id?` <button class="chip lis" data-kick="${p.id}" aria-label="Remove ${esc(p.name)}">✕</button>`:''}</li>`).join('')||'<li class="mute">Nobody yet…</li>';
+  app.querySelectorAll('[data-kick]').forEach(b=>b.onclick=()=>mpSend({t:'kick',id:b.dataset.kick}))}
+ if($('#mb'))$('#mb').innerHTML=boardRows(r,5);
+ if($('#fbd'))mpFinalDraw();
+ if($('#hb'))mpHostDraw();
+}
+function mpTopic(r){return r.sub?SUBLABEL[r.sub]:(r.theme==='M'?'Mixed topics':TN[r.theme])}
+function mpHostScreen(){
+ const opts='<option value="M">🎲 Mixed topics</option>'+GROUPS.map(g=>`<optgroup label="${g.name}"><option value="${g.k}">All ${g.name.toLowerCase()}</option>${g.subs.filter(s=>s[0]!=='#').map(s=>`<option value="${s}">${SUBLABEL[s]}</option>`).join('')}</optgroup>`).join('');
+ app.innerHTML=`<div class="section-kicker">🎮 Multiplayer</div><h1>Host a game</h1><div class="card"><label for="mt">Topic</label><select id="mt">${opts}</select><label for="mn2" style="display:block;margin-top:12px">Your name</label><input id="mn2" maxlength="24" value="${esc(store('cc_name')||'')}" placeholder="Teacher or player name"><label style="display:flex;gap:8px;align-items:center;margin-top:12px"><input type="checkbox" id="mpl" checked style="width:auto;min-height:0"> I want to play too</label><p class="mute" id="merr" role="alert"></p><div class="row"><button class="main" id="mgo">Create room →</button><button id="mbk">Back</button></div></div>`;
+ $('#mbk').onclick=menu;
+ $('#mgo').onclick=()=>{const v=$('#mt').value,n=$('#mn2').value.trim(),sub=v.includes('-')?v:null,theme=sub?sub[0].toUpperCase():v;store('cc_name',n);$('#merr').textContent='Connecting…';mpOpen({t:'create',name:n,theme,sub,play:$('#mpl').checked})};
+}
+function mpJoinScreen(code){
+ app.innerHTML=`<div class="section-kicker">🎮 Multiplayer</div><h1>Join a game</h1><div class="card"><label for="jc">Room code</label><input id="jc" maxlength="4" autocapitalize="characters" autocomplete="off" value="${esc(code||'')}" style="text-transform:uppercase;letter-spacing:.3em;font-size:1.6rem;text-align:center"><label for="jn" style="display:block;margin-top:12px">Your name</label><input id="jn" maxlength="24" autocomplete="nickname" value="${esc(store('cc_name')||'')}"><p class="mute" id="merr" role="alert"></p><div class="row"><button class="main" id="jgo">Join →</button><button id="jbk">Back</button></div></div>`;
+ $('#jbk').onclick=()=>{try{history.replaceState(null,'',location.pathname)}catch(e){}menu()};
+ const go=()=>{const c=$('#jc').value.trim().toUpperCase(),n=$('#jn').value.trim();if(c.length!==4){$('#merr').textContent='Enter the 4-letter code.';return}if(!n){$('#merr').textContent='Type your name.';$('#jn').focus();return}store('cc_name',n);$('#merr').textContent='Connecting…';mpOpen({t:'join',code:c,name:n})};
+ $('#jgo').onclick=go;$('#jn').onkeydown=e=>{if(e.key==='Enter')go()};
+}
+function mpLobby(){
+ const r=MP.room,link=location.origin+location.pathname+'#room-'+r.code;
+ app.innerHTML=`<div class="section-kicker">🎮 Room</div><h1>Code <span class="code">${esc(r.code)}</span></h1><p class="mute">Topic: ${esc(mpTopic(r))} · host: ${esc(r.hostName)}</p>
+ <div class="card"><div class="lobby"><img src="/qr.svg?u=${encodeURIComponent(link)}" alt="QR code to join this room" width="180" height="180"><div><p><b>Scan the QR code</b>, or open the link and type the code.</p><p class="mute" style="word-break:break-all">${esc(link)}</p><button id="cp">Copy link</button></div></div></div>
+ <div class="card"><h2>Players <span id="pc"></span></h2><ul class="plist" id="pl"></ul></div>
+ <div class="row">${MP.host?'<button class="main" id="st">Start the game →</button>':'<p class="mute">Waiting for the host to start…</p>'}<button id="lv">Leave</button></div>`;
+ $('#lv').onclick=mpLeave;
+ $('#cp').onclick=()=>{try{navigator.clipboard.writeText(link);$('#cp').textContent='Copied!'}catch(e){}};
+ if($('#st'))$('#st').onclick=()=>mpSend({t:'start'});
+ mpRefresh();
+}
+function mpFinalDraw(){
+ const r=MP.room,done=r.players.filter(p=>p.done).length;
+ $('#fbd').innerHTML=`<h2>🏆 Leaderboard</h2><p class="mute">${done} of ${r.players.length} players finished${r.state==='done'?' · game over':''}</p>${boardRows(r,80)}${MP.host?`<div class="row" style="margin-top:12px"><button class="main" id="ag">Play again</button><button id="en">End game</button></div>`:''}<div class="row" style="margin-top:12px"><button id="lv2">Leave room</button></div>`;
+ if($('#ag'))$('#ag').onclick=()=>mpSend({t:'again'});if($('#en'))$('#en').onclick=()=>mpSend({t:'end'});$('#lv2').onclick=mpLeave;
+}
+function mpFinish(){
+ const st=stats(S.res);mpSend({t:'finish',mi:st.mi,late:st.late,sq:S.res.map(r=>r.c[0]).join('')});
+ const rep=$('#rep');if(rep)rep.insertAdjacentHTML('beforebegin','<section class="card" id="fbd"></section>');mpFinalDraw();
+}
+function mpDoneScreen(){app.innerHTML='<div class="section-kicker">🎮 Multiplayer</div><h1>You have finished</h1><section class="card" id="fbd"></section>';mpFinalDraw()}
+function mpHostBoard(){app.innerHTML='<div class="section-kicker">🎮 Live</div><h1>Game in progress</h1><section class="card" id="hb"></section>';mpHostDraw()}
+function mpHostDraw(){
+ const r=MP.room,done=r.players.filter(p=>p.done).length;
+ $('#hb').innerHTML=`<p class="mute">Topic: ${esc(mpTopic(r))} · ${done} of ${r.players.length} finished${r.state==='done'?' · game over':''}</p>${boardRows(r,100)}<div class="row" style="margin-top:12px"><button class="main" id="ag">Play again</button><button id="en">End game</button><button id="lv2">Leave</button></div>`;
+ $('#ag').onclick=()=>mpSend({t:'again'});$('#en').onclick=()=>mpSend({t:'end'});$('#lv2').onclick=mpLeave;
+}
+function route(){
+ const h=location.hash||'',m=h.match(/^#class-([A-Z0-9]{4})-([MGVEW])$/),r=h.match(/^#room-([A-Z0-9]{4})$/),sv=SSX.get();
+ if(sv&&(!r||r[1]===sv.code)){MP=null;app.innerHTML='<p class="mute">Reconnecting to your game…</p>';mpOpen({t:'rejoin',code:sv.code,id:sv.id,token:sv.token});return}
+ if(m)classJoin(m[1],m[2]);else if(r)mpJoinScreen(r[1]);else menu();
+}
+try{muted=localStorage.getItem('cc_mute')==='1'}catch(e){}
+const BASE=location.href.split('#')[0],TN={G:'Grammar',V:'Vocabulary',E:'Everyday English',W:'World & numbers'},IC={G:'🧩',V:'📚',E:'🛒',W:'🌍',M:'🎲'};
+const GROUPS=[
+ {k:'G',name:'Grammar',desc:'Build accurate sentences',icon:'🧩',subs:['#Tenses','g-ps','g-pc','g-pm','#Verbs','g-tobe','g-past','g-pp','g-modal','g-cond','#Words & sentences','g-comp','g-art','g-prep','g-quest']},
+ {k:'V',name:'Vocabulary',desc:'Grow your word power',icon:'📚',subs:['v-sport','v-daily','v-clothes','v-home','v-food','v-family','v-jobs','v-desc']},
+ {k:'E',name:'Everyday English',desc:'Speak in real-life situations',icon:'💬',subs:['e-daily','e-shop','e-food','e-travel','e-social']},
+ {k:'W',name:'World & numbers',desc:'Explore places and facts',icon:'🌍',subs:['w-uk','w-geo','w-facts','w-culture']}
+];
+const SUBLABEL={'g-ps':'Present simple','g-pc':'Present continuous','g-pm':'Present: simple vs continuous','g-tobe':'The verb to be','g-past':'Past simple','g-pp':'Past participle & present perfect','g-cond':'Conditionals','g-modal':'Modal verbs','g-comp':'Comparatives & superlatives','g-art':'Articles & quantifiers','g-prep':'Prepositions','g-quest':'Questions & word order',
+'v-sport':'Sport','v-daily':'Everyday life','v-clothes':'Clothes','v-home':'Home & furniture','v-food':'Food & drink','v-family':'Family & people','v-jobs':'Jobs & school','v-desc':'Describing words',
+'e-daily':'Time & routines','e-shop':'Shopping & money','e-food':'Restaurants & cafés','e-travel':'Travel & directions','e-social':'Polite phrases & phone calls',
+'w-uk':'UK & English-speaking world','w-geo':'Countries & capitals','w-facts':'Numbers & facts','w-culture':'Festivals & traditions','__wrong':'My mistakes'};
+function esc(s){return String(s).replace(/[&<>"']/g,c=>'&#'+c.charCodeAt(0)+';')}
+function pickQs(th,r,sub){let pool=Q.filter(q=>!th||th==='M'||q.th===th);if(sub)pool=sub==='__wrong'?wrongQs():Q.filter(q=>q.sub===sub);if(sub)return shuffle(pool,r).slice(0,7).sort((a,b)=>({A1:0,A2:1,B1:2}[a.lv]-{A1:0,A2:1,B1:2}[b.lv]));const out=[];[['A1',2],['A2',3],['B1',2]].forEach(([l,n])=>out.push(...shuffle(pool.filter(q=>q.lv===l),r).slice(0,n)));if(out.length<7)out.push(...shuffle(pool.filter(q=>!out.includes(q)),r).slice(0,7-out.length));const o={A1:0,A2:1,B1:2};return out.sort((a,b)=>o[a.lv]-o[b.lv])}
+function dayTh(){const d=new Date();return 'GVEW'[Math.floor(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate())/864e5)%4]}
+function yest(){const d=new Date(Date.now()-864e5);return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate()}
+function streak(){try{const s=JSON.parse(store('cc_streak'));return s&&(s.last===today()||s.last===yest())?s.n:0}catch(e){return 0}}
+function bumpStreak(){let s=null;try{s=JSON.parse(store('cc_streak'))}catch(e){}if(s&&s.last===today())return;store('cc_streak',JSON.stringify({last:today(),n:s&&s.last===yest()?s.n+1:1}))}
+function menu(){
+ let d=null;try{d=JSON.parse(store('cc_daily'))}catch(e){}
+ const played=d&&d.date===today(),th=dayTh(),n=streak();
+ const groups=GROUPS,P=prog(),WQ=wrongQs();
+ const cards=groups.map(g=>{const count=Q.filter(q=>q.th===g.k).length;return `<section class="topic-card" data-topic="${g.k}"><div class="topic-head"><div class="topic-icon">${g.icon}</div><div><h3>${g.name}</h3><p>${g.desc} · ${count} questions</p></div></div><div class="subtopics">${g.subs.map(sub=>{if(sub[0]==='#')return `<div class="subhead">${sub.slice(1)}</div>`;const c=Q.filter(q=>q.sub===sub).length;return `<button class="subtopic" data-th="${g.k}" data-sub="${sub}"><span>${SUBLABEL[sub]}</span><span class="sub-count">${c} ${c===1?'Q':'Qs'}${P[sub]&&P[sub].n>=2?' · '+Math.round(100*P[sub].s/P[sub].n)+'%':''}</span></button>`}).join('')}</div><button class="topic-all" data-t="${g.k}">Practise all ${g.name.toLowerCase()} →</button></section>`}).join('');
+ app.innerHTML=`<header class="masthead"><div class="eyebrow">All aboard · English practice</div><h1>Clickety-Clack</h1><p class="subtitle">A little practice. A longer journey. Build your English from A1 to B1.</p></header>
+ <div class="card feature-card"><div class="feature-top"><div><div class="section-kicker">🚦 Today’s departure</div><h2>Daily challenge</h2><p>Today’s focus: <b>${IC[th]} ${TN[th]}</b>. Seven questions, one shared challenge.</p><p class="mute">${n?'🔥 '+n+(n>1?' days':' day')+' in a row':'Play today to start your streak.'}</p></div><div class="feature-emoji">🎟️</div></div><div class="row" style="margin-top:12px"><button class="main" id="dc">${played?'See today’s result':'Start today’s train'} →</button><button id="mix">🎲 Mixed practice</button></div></div>
+ ${WQ.length?`<div class="card"><div class="section-kicker">🔁 Learn from mistakes</div><h2>Fix my mistakes</h2><p class="mute">${WQ.length} question${WQ.length>1?'s':''} to try again. Answer correctly to remove them from the list.</p><button class="main" id="fx">Practise my mistakes →</button></div>`:''}
+ <div class="section-kicker">Choose your learning route</div><h2>Explore by topic</h2><p class="mute">Pick a whole subject or go straight to a smaller theme. Short topic rounds use the questions available in that theme.</p><div class="menu-grid">${cards}</div>
+ <section class="card"><div class="section-kicker">🎮 Play together</div><h2>Multiplayer</h2><p class="mute">Create a room, share the QR code, and race on a live leaderboard.</p><div class="row"><button class="main" id="mph">Host a game</button><button id="mpj">Join with a code</button></div></section>
+ <section class="card"><div class="section-kicker">👩‍🏫 For the classroom</div><h2>Class game</h2><p class="mute">Create a shared quiz link and QR code for your students.</p><label for="cs">Choose a topic</label><select id="cs" aria-label="Topic">${'GVEWM'.split('').map(k=>`<option value="${k}">${k==='M'?'🎲 Mixed topics':IC[k]+' '+TN[k]}</option>`).join('')}</select><div class="row" style="margin-top:12px"><button class="main" id="cg">Create class game →</button></div></section>
+ <details class="card details-card"><summary>How to play</summary><ul><li>Daily and full-topic rounds have 7 questions, from A1 to B1.</li><li>Short theme rounds include the questions available for that theme.</li><li>Correct answers add miles and carriages; quick answers and streaks can earn bonuses.</li><li>London to Edinburgh is ${TOTAL} miles. Can you get the train all the way there?</li></ul></details>`;
+ $('#dc').onclick=()=>{if(played){RM=d.meta||{name:store('cc_name')||'',mode:'Daily challenge',topic:'',date:d.date};result(d.res,true)}else{SFX.whistle();start(false,th)}};
+ $('#mix').onclick=()=>{SFX.whistle();start(true,'M')};
+ if($('#fx'))$('#fx').onclick=()=>{SFX.whistle();start(true,'M',undefined,undefined,'__wrong')};
+ app.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{SFX.whistle();start(true,b.dataset.t)});
+ app.querySelectorAll('[data-sub]').forEach(b=>b.onclick=()=>{SFX.click();lessonScreen(b.dataset.sub,b.dataset.th)});
+ $('#cg').onclick=()=>classHost($('#cs').value);
+ $('#mph').onclick=mpHostScreen;$('#mpj').onclick=()=>mpJoinScreen('');
+}
+function drawBoard(code){let a=[];try{a=JSON.parse(store('cc_board_'+code))||[]}catch(e){}a.sort((x,y)=>y.m-x.m||x.l-y.l);$('#bd').innerHTML=a.length?`<ol>${a.map(x=>`<li><b>${esc(x.n)}</b> ${x.m} miles · ${x.l} min late ${esc(x.s)}</li>`).join('')}</ol>`:''}
+function classHost(th){
+ const code=[0,0,0,0].map(()=>'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[Math.floor(Math.random()*32)]).join(''),link=BASE+'#class-'+code+'-'+th;
+ app.innerHTML=`<h1>Class game</h1><p class='mute'>Topic: ${th==='M'?'Mixed topics':TN[th]} · code <b>${code}</b></p><div class='card'><p>Students scan this QR code, type their name and play the same 7 questions.</p><div id='qr' style='background:#fff;padding:10px;width:fit-content;margin:8px auto'></div><p class='mute' style='word-break:break-all'>${link}</p><div class='row'><button class='main' id='play'>Play too</button><button id='mn'>Menu</button></div></div><div class='card'><h2>Class board</h2><p class='mute'>Each student taps “Copy line” at the end and sends it to you. Paste the lines here.</p><textarea id='ta' rows='3' aria-label='Results'></textarea><div class='row' style='margin-top:8px'><button id='add'>Add to board</button></div><div id='bd'></div></div>`;
+ $('#qr').innerHTML='<img src="/qr.svg?u='+encodeURIComponent(link)+'" alt="QR code" width="200" height="200">'
+ $('#play').onclick=()=>classJoin(code,th);$('#mn').onclick=menu;
+ $('#add').onclick=()=>{let a=[];try{a=JSON.parse(store('cc_board_'+code))||[]}catch(e){}$('#ta').value.split('\n').forEach(l=>{const p=l.split('|').map(s=>s.trim());if(p.length>=3&&p[0]&&Number.isFinite(Number(p[1]))&&Number(p[1])>=0&&Number.isFinite(Number(p[2]||0))&&Number(p[2]||0)>=0){a=a.filter(x=>x.n!==p[0].slice(0,24));a.push({n:p[0].slice(0,24),m:Math.round(Number(p[1])),l:Math.round(Number(p[2]||0)),s:(p[3]||'').slice(0,12)})}});store('cc_board_'+code,JSON.stringify(a));$('#ta').value='';drawBoard(code)};
+ drawBoard(code);
+}
+function classJoin(code,th){
+ app.innerHTML=`<h1>Class game</h1><p class='mute'>Topic: ${th==='M'?'Mixed topics':TN[th]} · code ${code}</p><div class='card'><label for='nm'>Your name</label><input id='nm' maxlength='24' autocomplete='nickname' value='${esc(store('cc_name')||'')}'><div class='row' style='margin-top:12px'><button class='main' id='go'>Start</button></div></div>`;
+ $('#go').onclick=()=>{const n=$('#nm').value.trim().slice(0,24);if(!n){$('#nm').focus();return}store('cc_name',n);SFX.whistle();start(true,th,'cls'+code,{code,n})};
+}
+function clsDone(){
+ const res=S.res,mi=Math.min(TOTAL,res.reduce((a,x)=>a+x.mi,0)),late=res.reduce((a,x)=>a+x.delay,0),line=S.cls.n.replace(/\|/g,'/')+' | '+mi+' | '+late+' | '+res.map(r=>r.c==='good'?'🟩':r.c==='mid'?'🟨':'⬛').join('');
+ app.insertAdjacentHTML('beforeend',`<div class='card'><h2>Class ${S.cls.code}</h2><p>Send this line to your teacher:</p><p><b>${esc(line)}</b></p><button id='cl'>Copy line</button></div>`);
+ $('#cl').onclick=()=>{try{navigator.clipboard.writeText(line)}catch(e){}$('#cl').textContent='Copied!'};
+}
+initSnd();route();
+</script>
+</body>
+</html>
