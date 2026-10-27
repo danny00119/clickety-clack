@@ -56,7 +56,17 @@ label{font-weight:700}
 .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
 .chip{padding:8px 12px;min-height:42px}
 .lis{min-height:34px;padding:0 9px;font-size:1rem;vertical-align:middle;margin-left:6px;box-shadow:2px 2px 0 var(--edge)}
-.snd{position:fixed;top:calc(env(safe-area-inset-top,0px) + 14px);right:12px;z-index:5;min-width:46px;padding:2px 10px;border-radius:50%}
+.sndw{position:fixed;top:calc(env(safe-area-inset-top,0px) + 14px);right:12px;z-index:6}
+.snd{min-width:46px;padding:2px 10px;border-radius:50%}
+/* Volume panel: opens when the pointer is over the sound button (or it has keyboard focus) */
+.sndpop{position:absolute;top:100%;right:0;margin-top:12px;width:230px;padding:12px 14px 8px;background:var(--card);border:2px solid var(--edge);border-radius:8px;box-shadow:4px 4px 0 var(--edge);opacity:0;visibility:hidden;transform:translateY(-6px);transition:opacity .15s,transform .15s,visibility 0s .15s}
+.sndpop:before{content:"";position:absolute;left:0;right:0;top:-16px;height:16px}
+.sndpop:after{content:"";position:absolute;top:-9px;right:16px;width:14px;height:14px;background:var(--card);border-left:2px solid var(--edge);border-top:2px solid var(--edge);transform:rotate(45deg)}
+.sndw:hover .sndpop,.sndw:focus-within .sndpop{opacity:1;visibility:visible;transform:none;transition:opacity .15s,transform .15s}
+.sndpop label{display:flex;justify-content:space-between;align-items:baseline;font:700 .74rem var(--fm);letter-spacing:.12em;text-transform:uppercase}
+.sndpop output{font:700 1.1rem var(--fm);color:var(--green);letter-spacing:0}
+.sndpop input{display:block;width:100%}
+.sndpop .chip{width:100%;min-height:36px;margin:4px 0 6px;padding:4px 10px;font-size:.88rem;box-shadow:2px 2px 0 var(--edge)}
 .lv{display:inline-block;font:700 .78rem/1.5 var(--fm);background:var(--green);color:var(--on-green);border-radius:4px;padding:0 7px;margin-right:6px;vertical-align:2px}
 summary{cursor:pointer;font:800 1.3rem var(--fd);text-transform:uppercase}
 ul{padding-left:1.2em;margin:.4em 0}li{margin:.3em 0}ol{padding-left:1.3em}
@@ -308,7 +318,7 @@ div.lopt{cursor:default}
 </style>
 </head>
 <body>
-<button id="snd" class="snd"></button>
+<div class="sndw"><button id="snd" class="snd"></button><div class="sndpop"><label for="gvol"><span>Volume</span><output id="gvolo"></output></label><input type="range" id="gvol" min="0" max="100" step="5"><button id="gmute" class="chip"></button></div></div>
 <main id="app"></main>
 <script>
 const ROUTE=[["London",0],["Peterborough",76],["Doncaster",156],["York",188],["Darlington",232],["Newcastle",268],["Berwick-upon-Tweed",336],["Edinburgh",393]];
@@ -1012,7 +1022,26 @@ const SFX={
  whistle:()=>{tone(740,.45,'sine',0,.13);tone(932,.6,'sine',.05,.1)},
  fanfare:()=>[523,659,784,1047].forEach((f,i)=>tone(f,.3,'triangle',i*.15,.2))
 };
-function initSnd(){const b=$('#snd'),r=()=>{b.textContent=muted?'🔇':'🔊';b.setAttribute('aria-label',muted?'Sound is off. Turn sound on':'Sound is on. Turn sound off')};r();b.onclick=()=>{muted=!muted;store('cc_mute',muted?'1':'0');r();if(!muted)SFX.click()}}
+// The sound button mutes; its panel (and the slider in Settings) sets the volume. sndSync() keeps them all in step.
+function sndSync(){
+ const b=$('#snd'),v=Math.round(VOL()*100),off=muted||v===0;
+ b.textContent=off?'🔇':v<50?'🔉':'🔊';b.setAttribute('aria-label',off?'Sound is off. Turn sound on':'Sound is on, volume '+v+'%. Turn sound off');
+ $('#gvol').value=v;$('#gvolo').textContent=v+'%';$('#gmute').textContent=off?'🔊 Turn sound on':'🔇 Turn sound off';
+ const mv=$('#vol');if(mv){mv.value=v;$('#volo').textContent=v+'%'}
+}
+function setVol(v){store('cc_vol',String(v));if(muted&&v>0){muted=false;store('cc_mute','0')}sndSync()}
+function initSnd(){
+ sndSync();
+ const w=$('.sndw'),toggle=()=>{if(!muted&&VOL()===0)setVol(50);else{muted=!muted;store('cc_mute',muted?'1':'0');sndSync()}if(!muted)SFX.click()};
+ // On a touch screen the first tap only opens the panel (there is no hover); it has its own sound on/off button.
+ let opening=false;
+ $('#snd').onpointerdown=e=>{opening=e.pointerType!=='mouse'&&!w.matches(':focus-within')};
+ $('#snd').onclick=()=>{if(opening){opening=false;return}toggle()};
+ $('#gmute').onclick=toggle;
+ $('#gvol').oninput=e=>setVol(+e.target.value);$('#gvol').onchange=()=>SFX.good();
+ // Focus keeps the panel open for keyboard and touch users; a mouse closes it by leaving.
+ w.onpointerleave=e=>{if(e.pointerType==='mouse'&&w.contains(document.activeElement))document.activeElement.blur()};
+}
 function adv(m){const b=$('.track b');if(!b)return;b.style.left=at(m/TOTAL);b.classList.add('run');const e=$('.ends span:nth-child(2)');if(e)e.textContent=D(Math.min(m,TOTAL))+' / '+D(TOTAL)+' '+UL();let n=0;const iv=setInterval(()=>{const p=document.createElement('i');p.className='puff';p.style.left=b.offsetLeft+'px';b.parentNode.appendChild(p);setTimeout(()=>p.remove(),950);if(++n>6){clearInterval(iv);b.classList.remove('run')}},130)}
 function confetti(){if(matchMedia('(prefers-reduced-motion:reduce)').matches)return;const cs=['#c2412d','#1d5a43','#e8a631','#2f6bd3','#f7efda'];for(let i=0;i<46;i++){const e=document.createElement('i');e.className='conf';e.style.left=Math.random()*100+'vw';e.style.background=cs[i%5];e.style.animationDelay=Math.random()*.6+'s';e.style.animationDuration=(1.8+Math.random()*1.4)+'s';document.body.appendChild(e);setTimeout(()=>e.remove(),3600)}}
 const store=(k,v)=>{try{if(v===undefined)return localStorage.getItem(k);localStorage.setItem(k,v)}catch(e){return null}};
@@ -1049,9 +1078,9 @@ const locoSVG=(c='#c2412d')=>`<svg class="loco" viewBox="0 0 64 34" aria-hidden=
 const trackHTML=(mi,c)=>{const p=Math.min(100,mi/TOTAL*100);return `<div class="track" role="img" aria-label="Train journey: ${D(Math.min(mi,TOTAL))} of ${D(TOTAL)} ${UL()} from London to Edinburgh"><div class="scene"></div>${ROUTE.map(([n,m])=>`<i class="stn" title="${n}" style="left:${at(m/TOTAL)}"></i>`).join('')}<b style="left:${at(p/100)}">${locoSVG(c)}</b></div><div class="ends"><span>London</span><span>${D(Math.min(mi,TOTAL))} / ${D(TOTAL)} ${UL()}</span><span>Edinburgh</span></div>`};
 const trainHTML=(res,all)=>`<div class='train' aria-label='Your train'>${locoSVG()}${res.map((r,i)=>`<span class='cx ${r.c}${all||i===res.length-1?' new':''}' style='animation-delay:${all?i*.15:0}s'></span>`).join('')}</div>`;
 
-function start(practice,th,seed,cls,sub,mp,n){
+function start(practice,th,seed,sub,mp,n){
  const r=rng(seed||(practice?String(Math.random()):dailySeed()));
- S={qs:pickQs(th,r,sub,n),i:0,res:[],practice,r,cls,th,sub,mp};show();
+ S={qs:pickQs(th,r,sub,n),i:0,res:[],practice,r,th,sub,mp};show();
 }
 function show(){
  clearInterval(timer);
@@ -1063,7 +1092,7 @@ function show(){
   if(q.t==="num")return `<input id="ti" type="number" inputmode="decimal" aria-label="Your number">`;
   return `<div class="slot" id="seq" aria-label="Your answer"></div><div class="row" id="pool"></div>`;
  };
- app.innerHTML=`<div class="mute qmeta"><span class="lv">${q.lv}</span>Question ${S.i+1} of ${S.qs.length} · ${TN[q.th]}${q.sub?` / ${SUBLABEL[q.sub]||q.sub}`:""} · ${LABEL[q.t]}${S.cls?' · class '+S.cls.code:S.mp?' · multiplayer':S.practice?' · practice':''}</div>
+ app.innerHTML=`<div class="mute qmeta"><span class="lv">${q.lv}</span>Question ${S.i+1} of ${S.qs.length} · ${TN[q.th]}${q.sub?` / ${SUBLABEL[q.sub]||q.sub}`:""} · ${LABEL[q.t]}${S.mp?' · multiplayer':S.practice?' · practice':''}</div>
  <div class="bar"><i id="tb"></i></div>${S.mp&&MP?'<div id="mb" class="mb"></div>':''}${trackHTML(mi)}
  <div class="card ticket"><h2>${q.q}${TTS?' <button class="chip lis" id="ls" aria-label="Listen to the question">🔊</button>':''}</h2>${body()}<div id="fb"></div><div class="row"><button class="main" id="ok">Answer</button></div></div>`;
  const getAns=()=>q.t==="multi"?pick:q.t==="mc"?pick:q.t==="order"?seq.map(i=>q.a[i]):($("#ti")||{}).value;
@@ -1175,17 +1204,17 @@ function trackProg(res){const P=prog();let W=[];try{W=JSON.parse(store('cc_wrong
  res.forEach(r=>{if(r.sub){const b=P[r.sub]||(P[r.sub]={n:0,s:0});b.n++;b.s+=r.sc;if(b.n>30){b.n*=.8;b.s*=.8}}if(r.q){W=W.filter(x=>x!==r.q);if(r.c!=='good')W.push(r.q)}});
  store('cc_prog',JSON.stringify(P));store('cc_wrong',JSON.stringify(W.slice(-60)))}
 function lessonScreen(sub,th){
- const L=lesson(sub);if(!L.rule){start(true,th,undefined,undefined,sub);return}
+ const L=lesson(sub);if(!L.rule){start(true,th,undefined,sub);return}
  app.innerHTML=`<div class="section-kicker">📖 Mini lesson</div><h1>${esc(SUBLABEL[sub])}</h1><div class="card"><h2>Remember</h2><p>${esc(L.rule)}</p><h3>Examples</h3><ul class="exl">${L.ex.map(e=>`<li>${esc(e)}${TTS?` <button class="chip lis" data-say="${esc(e)}" aria-label="Listen">🔊</button>`:''}</li>`).join('')}</ul></div><div class="row"><button class="main" id="sq">Start quiz →</button><button id="bk">Back</button></div>`;
  app.querySelectorAll('[data-say]').forEach(b=>b.onclick=()=>speak(b.dataset.say));
- $('#sq').onclick=()=>{SFX.whistle();start(true,th,undefined,undefined,sub)};$('#bk').onclick=menu;
+ $('#sq').onclick=()=>{SFX.whistle();start(true,th,undefined,sub)};$('#bk').onclick=menu;
 }
 function topicLabel(){return Array.isArray(S.sub)?subsLabel(S.sub):S.sub?(S.sub==='__wrong'?'My mistakes':TN[S.th]+' / '+SUBLABEL[S.sub]):(!S.th||S.th==='M')?'Mixed topics':TN[S.th]}
 function ansText(q,a){try{if(q.t==='mc')return a==null?'—':q.o[a];if(q.t==='multi')return a&&a.length?a.map(i=>q.o[i]).join(', '):'—';if(q.t==='order')return a&&a.length?a.join(' '):'—';return String(a||'').trim()||'—'}catch(e){return '—'}}
 function finish(){
- RM={name:S.cls?S.cls.n:(store('cc_name')||''),mode:S.cls?'Class game '+S.cls.code:S.mp?'Multiplayer':S.practice?'Practice':'Daily challenge',topic:topicLabel(),date:today()};
+ RM={name:store('cc_name')||'',mode:S.mp?'Multiplayer':S.practice?'Practice':'Daily challenge',topic:topicLabel(),date:today()};
  if(!S.practice){store('cc_daily',JSON.stringify({date:today(),res:S.res,meta:RM}));bumpStreak()}
- trackProg(S.res);result(S.res,false,S.practice);if(S.cls)clsDone();if(S.mp)mpFinish();
+ trackProg(S.res);result(S.res,false,S.practice);if(S.mp)mpFinish();
 }
 function stats(res){
  const n=res.length,mi=Math.min(TOTAL,res.reduce((a,x)=>a+x.mi,0)),late=res.reduce((a,x)=>a+x.delay,0),good=res.filter(r=>r.c==='good').length,mid=res.filter(r=>r.c==='mid').length,
@@ -1311,7 +1340,7 @@ function mpMsg(m){
  if(m.t==='kicked'){if(MP){MP.left=true;try{MP.ws.close()}catch(e){}}MP=null;SSX.set(null);clearInterval(timer);S=null;menu();return}
  if(m.t==='err'){const had=MP&&MP.id;if(!had){try{MP&&MP.ws&&MP.ws.close()}catch(e){}MP=null;SSX.set(null)}const e=$('#merr');if(e)e.textContent=m.msg;else if(!had)menu();return}
 }
-function mpBegin(room){MP.round=room.round;clearInterval(timer);start(true,room.theme,room.seed,undefined,room.subs&&room.subs.length?room.subs:room.sub,true,room.n);mpSend({t:'progress',i:0,mi:0,late:0,sq:''})}
+function mpBegin(room){MP.round=room.round;clearInterval(timer);start(true,room.theme,room.seed,room.subs&&room.subs.length?room.subs:room.sub,true,room.n);mpSend({t:'progress',i:0,mi:0,late:0,sq:''})}
 function boardRows(r,max){
  return r.players.slice(0,max).map((p,i)=>`<div class="brow${p.id===MP.id?' me':''}${p.online?'':' off'}"><span class="rk">${i+1}</span><span class="nm">${esc(p.name)}${p.id===MP.id?' (you)':''}</span><span class="pbar"><i style="width:${Math.round(100*p.mi/TOTAL)}%"></i></span><span class="mi">${D(p.mi)} ${unit()}</span><span class="sq">${(p.sq||'').split('').map(c=>SQE[c]||'').join('')}${p.done?' ✓':''}</span></div>`).join('')||'<p class="mute">No players yet.</p>';
 }
@@ -1358,7 +1387,7 @@ function customScreen(){
  const info=()=>{const n=+$('#cn').value,ps=poolSize(subs);$('#cinfo').textContent=subs.length?`${subs.length} stop${subs.length>1?'s':''} chosen · ${ps} questions available · your journey: ${Math.min(n,ps)} questions.`:'Choose at least one stop.';$('#cgo').disabled=!subs.length};
  pickerBind($('#pk'),s=>{subs=s;if($('#cn'))info()});bindRange('cn','',info);
  $('#cbk').onclick=menu;
- $('#cgo').onclick=()=>{store('cc_custom',JSON.stringify({subs,n:+$('#cn').value}));SFX.whistle();start(true,'M',undefined,undefined,subs,false,+$('#cn').value)};
+ $('#cgo').onclick=()=>{store('cc_custom',JSON.stringify({subs,n:+$('#cn').value}));SFX.whistle();start(true,'M',undefined,subs,false,+$('#cn').value)};
 }
 function mpHostScreen(){
  const sv=savedPick('cc_host');
@@ -1524,12 +1553,12 @@ function livePodium(m){
  if($('#ag'))$('#ag').onclick=()=>mpSend({t:'again'});$('#lv2').onclick=mpLeave;
 }
 function route(){
- const h=location.hash||'',m=h.match(/^#class-([A-Z0-9]{4})-([MGVEW])$/),r=h.match(/^#room-([A-Z0-9]{4})$/),sv=SSX.get();
+ const h=location.hash||'',r=h.match(/^#room-([A-Z0-9]{4})$/),sv=SSX.get();
  if(sv&&(!r||r[1]===sv.code)){MP=null;app.innerHTML='<p class="mute">Reconnecting to your game…</p>';mpOpen({t:'rejoin',code:sv.code,id:sv.id,token:sv.token});return}
- if(m)classJoin(m[1],m[2]);else if(r)mpJoinScreen(r[1]);else menu();
+ if(r)mpJoinScreen(r[1]);else menu();
 }
 try{muted=localStorage.getItem('cc_mute')==='1'}catch(e){}
-const BASE=location.href.split('#')[0],TN={G:'Grammar',V:'Vocabulary',E:'Everyday English',W:'World & numbers'},IC={G:'🧩',V:'📚',E:'🛒',W:'🌍',M:'🎲'};
+const TN={G:'Grammar',V:'Vocabulary',E:'Everyday English',W:'World & numbers'},IC={G:'🧩',V:'📚',E:'🛒',W:'🌍',M:'🎲'};
 const GROUPS=[
  {k:'G',name:'Grammar',desc:'Build accurate sentences',icon:'🧩',subs:['#Tenses','g-ps','g-pc','g-pm','g-past','g-pastc','g-pp','g-future','#Verbs','g-tobe','g-have','g-modal','g-cond','g-passive','g-verbing','#Words & sentences','g-noun','g-pron','g-art','g-comp','g-adv','g-prep','g-quest','g-rel','g-link']},
  {k:'V',name:'Vocabulary',desc:'Grow your word power',icon:'📚',subs:['#People','v-family','v-body','v-feel','v-desc','v-jobs','v-school','#Daily life','v-daily','v-home','v-clothes','v-food','v-tech','v-collo','v-phrasal','#Out and about','v-town','v-transport','v-holiday','v-sport','v-free','v-weather','v-animals']},
@@ -1558,37 +1587,17 @@ function menu(){
  <section class="card"><div class="section-kicker">Custom journey</div><h2>Build your own route</h2><p class="mute">Choose the grammar and vocabulary you want to practise and how many questions you want.</p><button class="main" id="cu">Plan my journey →</button></section>
  <div class="section-kicker">Network map</div><h2>Choose your line</h2><p class="mute">Every topic is a line and every theme is a stop. Open a line to see its stops: pick one for a short lesson and quiz, or ride the whole line.</p><div class="menu-grid">${cards}</div>
  <section class="card"><div class="section-kicker">Play together</div><h2>Multiplayer</h2><p class="mute">⚡ Live quiz: show the questions on your screen, everybody answers on their phone and every player drives their own train. Or start a 🚂 train race where everyone plays at their own speed.</p><div class="row"><button class="main" id="mph">Host a game</button><button id="mpj">Join with a code</button></div></section>
- <section class="card"><div class="section-kicker">For the classroom</div><h2>Class game</h2><p class="mute">Create a shared quiz link and QR code for your students.</p><label for="cs">Choose a topic</label><select id="cs" aria-label="Topic">${'GVEWM'.split('').map(k=>`<option value="${k}">${k==='M'?'🎲 Mixed topics':IC[k]+' '+TN[k]}</option>`).join('')}</select><div class="row" style="margin-top:12px"><button class="main" id="cg">Create class game →</button></div></section>
- <section class="card"><div class="section-kicker">Settings</div><h2>Distance</h2><p class="mute">Show your journey in miles or kilometres.</p><div class="unit-pick" role="group" aria-label="Distance unit"><button data-u="mi" aria-pressed="${u==='mi'}">Miles</button><button data-u="km" aria-pressed="${u==='km'}">Kilometres</button></div><h2 style="margin-top:20px">Sound</h2>${rangeHTML('vol','Volume',0,100,Math.round(VOL()*100),'%')}<p class="mute">Sound effects and spoken questions. The 🔊 button at the top turns all sound off and on.</p></section>
+ <section class="card"><div class="section-kicker">Settings</div><h2>Distance</h2><p class="mute">Show your journey in miles or kilometres.</p><div class="unit-pick" role="group" aria-label="Distance unit"><button data-u="mi" aria-pressed="${u==='mi'}">Miles</button><button data-u="km" aria-pressed="${u==='km'}">Kilometres</button></div><h2 style="margin-top:20px">Sound</h2>${rangeHTML('vol','Volume',0,100,Math.round(VOL()*100),'%')}<p class="mute">Sound effects and spoken questions. You can also point at the 🔊 button in the top corner to change the volume on any screen, or click it to turn sound off and on.</p></section>
  <details class="card details-card"><summary>How to play</summary><ul><li>Daily and full-topic rounds have 7 questions, from A1 to B1.</li><li>Short theme rounds include the questions available for that theme.</li><li>Correct answers move your train and add carriages; quick answers and streaks can earn bonus distance.</li><li>London to Edinburgh is ${D(TOTAL)} ${UL()}. Can you get the train all the way there?</li></ul></details>`;
  app.querySelectorAll('[data-u]').forEach(b=>b.onclick=()=>{store('cc_unit',b.dataset.u);SFX.click();menu()});
- bindRange('vol','%',()=>store('cc_vol',$('#vol').value));$('#vol').onchange=()=>SFX.good();
+ bindRange('vol','%');$('#vol').oninput=e=>setVol(+e.target.value);$('#vol').onchange=()=>SFX.good();
  $('#cu').onclick=()=>{SFX.click();customScreen()};
  $('#dc').onclick=()=>{if(played){RM=d.meta||{name:store('cc_name')||'',mode:'Daily challenge',topic:'',date:d.date};result(d.res,true)}else{SFX.whistle();start(false,th)}};
  $('#mix').onclick=()=>{SFX.whistle();start(true,'M')};
- if($('#fx'))$('#fx').onclick=()=>{SFX.whistle();start(true,'M',undefined,undefined,'__wrong')};
+ if($('#fx'))$('#fx').onclick=()=>{SFX.whistle();start(true,'M',undefined,'__wrong')};
  app.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{SFX.whistle();start(true,b.dataset.t)});
  app.querySelectorAll('[data-sub]').forEach(b=>b.onclick=()=>{SFX.click();lessonScreen(b.dataset.sub,b.dataset.th)});
- $('#cg').onclick=()=>classHost($('#cs').value);
  $('#mph').onclick=mpHostScreen;$('#mpj').onclick=()=>mpJoinScreen('');
-}
-function drawBoard(code){let a=[];try{a=JSON.parse(store('cc_board_'+code))||[]}catch(e){}a.sort((x,y)=>y.m-x.m||x.l-y.l);$('#bd').innerHTML=a.length?`<ol>${a.map(x=>`<li><b>${esc(x.n)}</b> ${D(x.m)} ${UL()} · ${x.l} min late ${esc(x.s)}</li>`).join('')}</ol>`:''}
-function classHost(th){
- const code=[0,0,0,0].map(()=>'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[Math.floor(Math.random()*32)]).join(''),link=BASE+'#class-'+code+'-'+th;
- app.innerHTML=`<h1>Class game</h1><p class='mute'>Topic: ${th==='M'?'Mixed topics':TN[th]} · code <b>${code}</b></p><div class='card'><p>Students scan this QR code, type their name and play the same 7 questions.</p><div id='qr' style='background:#fff;padding:10px;width:fit-content;margin:8px auto'></div><p class='mute' style='word-break:break-all'>${link}</p><div class='row'><button class='main' id='play'>Play too</button><button id='mn'>Menu</button></div></div><div class='card'><h2>Class board</h2><p class='mute'>Each student taps “Copy line” at the end and sends it to you. Paste the lines here.</p><textarea id='ta' rows='3' aria-label='Results'></textarea><div class='row' style='margin-top:8px'><button id='add'>Add to board</button></div><div id='bd'></div></div>`;
- $('#qr').innerHTML='<img src="/qr.svg?u='+encodeURIComponent(link)+'" alt="QR code" width="200" height="200">'
- $('#play').onclick=()=>classJoin(code,th);$('#mn').onclick=menu;
- $('#add').onclick=()=>{let a=[];try{a=JSON.parse(store('cc_board_'+code))||[]}catch(e){}$('#ta').value.split('\n').forEach(l=>{const p=l.split('|').map(s=>s.trim());if(p.length>=3&&p[0]&&Number.isFinite(Number(p[1]))&&Number(p[1])>=0&&Number.isFinite(Number(p[2]||0))&&Number(p[2]||0)>=0){a=a.filter(x=>x.n!==p[0].slice(0,24));a.push({n:p[0].slice(0,24),m:Math.round(Number(p[1])),l:Math.round(Number(p[2]||0)),s:(p[3]||'').slice(0,12)})}});store('cc_board_'+code,JSON.stringify(a));$('#ta').value='';drawBoard(code)};
- drawBoard(code);
-}
-function classJoin(code,th){
- app.innerHTML=`<h1>Class game</h1><p class='mute'>Topic: ${th==='M'?'Mixed topics':TN[th]} · code ${code}</p><div class='card'><label for='nm'>Your name</label><input id='nm' maxlength='24' autocomplete='nickname' value='${esc(store('cc_name')||'')}'><div class='row' style='margin-top:12px'><button class='main' id='go'>Start</button></div></div>`;
- $('#go').onclick=()=>{const n=$('#nm').value.trim().slice(0,24);if(!n){$('#nm').focus();return}store('cc_name',n);SFX.whistle();start(true,th,'cls'+code,{code,n})};
-}
-function clsDone(){
- const res=S.res,mi=Math.min(TOTAL,res.reduce((a,x)=>a+x.mi,0)),late=res.reduce((a,x)=>a+x.delay,0),line=S.cls.n.replace(/\|/g,'/')+' | '+mi+' | '+late+' | '+res.map(r=>r.c==='good'?'🟩':r.c==='mid'?'🟨':'⬛').join('');
- app.insertAdjacentHTML('beforeend',`<div class='card'><h2>Class ${S.cls.code}</h2><p>Send this line to your teacher:</p><p><b>${esc(line)}</b></p><button id='cl'>Copy line</button></div>`);
- $('#cl').onclick=()=>{try{navigator.clipboard.writeText(line)}catch(e){}$('#cl').textContent='Copied!'};
 }
 initSnd();route();
 </script>
