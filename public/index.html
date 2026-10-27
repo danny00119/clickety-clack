@@ -5,207 +5,278 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Clickety-Clack: the daily English train quiz</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800;900&family=Overpass:wght@400;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#e9eef3;--card:#fbfcfd;--ink:#142238;--mute:#5d6c80;--line:#c9d3de;--acc:#c8102e;--good:#23874a;--mid:#c58b00;--bad:#c8102e;--rail:#142238;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:light}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0e1622;--card:#16212f;--ink:#e8eef6;--mute:#93a3b8;--line:#2a384b;--acc:#ff5a6e;--good:#4cc27a;--mid:#e8b22e;--bad:#ff6b7a;--rail:#e8eef6;color-scheme:dark}}
-:root[data-theme="dark"]{--bg:#0e1622;--card:#16212f;--ink:#e8eef6;--mute:#93a3b8;--line:#2a384b;--acc:#ff5a6e;--good:#4cc27a;--mid:#e8b22e;--bad:#ff6b7a;--rail:#e8eef6;color-scheme:dark}
+/* Clickety-Clack · design: vintage railway poster + station signage + departure boards */
+:root{
+ --bg:#f1e8d4;--bg2:#e6d9bc;--card:#fffaee;--ink:#15261f;--mute:#5d6a60;--line:#d8caa9;--edge:#15261f;
+ --green:#1d5a43;--on-green:#f7efda;--brass:#e8a631;--on-brass:#15261f;--red:#c2412d;
+ --good:#2b8a55;--mid:#c98510;--bad:#c2412d;--acc:#c2412d;
+ --board:#17140f;--amber:#ffb53d;--amber-dim:#8a6a33;
+ --sky:#cfe3dc;--hill1:#9cc3a0;--hill2:#6fa281;--sun:#f2b63c;
+ --lG:#7a52c0;--lV:#d6802a;--lE:#16907c;--lW:#2f6bd3;
+ --fd:"Big Shoulders Display","Arial Narrow",Impact,sans-serif;--fb:"Overpass","Trebuchet MS",system-ui,sans-serif;--fm:"Space Mono",ui-monospace,Menlo,monospace;
+ --sh:5px 5px 0 var(--edge);color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+ --bg:#0d1714;--bg2:#13211c;--card:#16241f;--ink:#efe6d1;--mute:#a4ae9f;--line:#2c3d35;--edge:#060d0a;
+ --green:#246a50;--on-green:#f7efda;--brass:#f0b444;--on-brass:#15261f;--red:#ff7a5e;
+ --good:#4fc184;--mid:#f0b444;--bad:#ff7a6a;--acc:#ff7a5e;--board:#0a0a07;
+ --sky:#183a33;--hill1:#285446;--hill2:#1d4337;--sun:#f0c45a;--lG:#a585e6;--lV:#f0a04a;--lE:#3cc2a8;--lW:#6b9cf0;color-scheme:dark}}
+:root[data-theme="dark"]{
+ --bg:#0d1714;--bg2:#13211c;--card:#16241f;--ink:#efe6d1;--mute:#a4ae9f;--line:#2c3d35;--edge:#060d0a;
+ --green:#246a50;--on-green:#f7efda;--brass:#f0b444;--on-brass:#15261f;--red:#ff7a5e;
+ --good:#4fc184;--mid:#f0b444;--bad:#ff7a6a;--acc:#ff7a5e;--board:#0a0a07;
+ --sky:#183a33;--hill1:#285446;--hill2:#1d4337;--sun:#f0c45a;--lG:#a585e6;--lV:#f0a04a;--lE:#3cc2a8;--lW:#6b9cf0;color-scheme:dark}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.55 "Gill Sans","Trebuchet MS",system-ui,sans-serif}
-main{max-width:560px;margin:0 auto;padding:18px 16px 40px}
-h1{font:700 2rem/1.1 Georgia,"Times New Roman",serif;margin:.2em 0 .1em;letter-spacing:-.01em}
-h2{font:700 1.3rem/1.3 Georgia,serif;margin:.2em 0 .5em}
-p{margin:.4em 0}
-.mute{color:var(--mute);font-size:.92rem}
-.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px;margin:14px 0}
-button{font:inherit;cursor:pointer;border-radius:8px;border:1.5px solid var(--ink);background:transparent;color:var(--ink);padding:10px 14px;min-height:44px}
-button.main{background:var(--ink);color:var(--bg);font-weight:700}
-button:focus-visible,input:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
-button:disabled{opacity:.45;cursor:default}
-.opts{display:grid;gap:8px;margin:12px 0}
-.opts button{text-align:left}
-.opts button.on{background:var(--ink);color:var(--bg)}
-.opts button.ok{border-color:var(--good);background:var(--good);color:#fff}
-.opts button.no{border-color:var(--bad);background:var(--bad);color:#fff}
-input{font:inherit;width:100%;padding:10px 12px;border:1.5px solid var(--ink);border-radius:8px;background:var(--card);color:var(--ink);min-height:44px}
-.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-.chip{padding:8px 12px;min-height:40px}
-.slot{min-height:56px;border:1.5px dashed var(--line);border-radius:8px;padding:8px;display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}
-.lv{display:inline-block;font-size:.8rem;font-weight:700;border:1.5px solid var(--mute);color:var(--mute);border-radius:4px;padding:0 6px;margin-right:6px}
-.bar{height:6px;background:var(--line);border-radius:3px;overflow:hidden;margin:8px 0}
-.bar i{display:block;height:100%;width:100%;background:var(--acc);transition:width .1s linear}
-.track{position:relative;height:34px;margin:14px 4px 6px}
-.track:before{content:"";position:absolute;left:0;right:0;top:22px;height:4px;background:repeating-linear-gradient(90deg,var(--rail) 0 10px,transparent 10px 16px);opacity:.55}
-.track b{position:absolute;top:0;font-size:1.4rem;line-height:1;transform:translateX(-50%);transition:left .6s ease}
-.ends{display:flex;justify-content:space-between;font-size:.85rem;color:var(--mute)}
-.train{display:flex;gap:4px;align-items:flex-end;margin:10px 0;flex-wrap:wrap}
-.cx{width:30px;height:20px;border-radius:4px;border:1.5px solid var(--ink)}
-.cx.good{background:var(--good)}.cx.mid{background:var(--mid)}.cx.none{background:transparent;border-style:dashed}
-.fb{border-left:5px solid var(--mid);padding:6px 12px;margin:12px 0;background:var(--bg);border-radius:0 8px 8px 0}
-.fb.good{border-color:var(--good)}.fb.none{border-color:var(--bad)}
-ul{padding-left:1.2em;margin:.4em 0}
-li{margin:.3em 0}
+html{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0;color:var(--ink);font:400 18px/1.55 var(--fb);background-color:var(--bg);
+ background-image:linear-gradient(var(--bg2) 0 0),repeating-linear-gradient(90deg,transparent 0 46px,color-mix(in srgb,var(--line) 45%,transparent) 46px 48px);
+ background-size:100% 8px,100% 8px;background-repeat:no-repeat,repeat-x;background-position:0 0,0 8px}
+main{max-width:880px;margin:0 auto;padding:30px 20px 60px}
+h1,h2,h3{font-family:var(--fd);text-transform:uppercase;letter-spacing:.01em;line-height:.95}
+h1{font-weight:900;font-size:clamp(2.6rem,7.5vw,4.4rem);margin:.15em 0 .15em}
+h2{font-weight:800;font-size:1.75rem;margin:.1em 0 .45em}
+h3{font-weight:800;font-size:1.35rem;margin:16px 0 6px}
+p{margin:.45em 0}
+a{color:inherit}
+.mute{color:var(--mute);font-size:.94rem}
+.section-kicker,.eyebrow{font:700 .74rem/1.3 var(--fm);letter-spacing:.14em;text-transform:uppercase;color:var(--red);margin-bottom:6px}
+.card{background:var(--card);border:2px solid var(--edge);border-radius:8px;box-shadow:var(--sh);padding:20px;margin:22px 0;animation:rise .35s both}
+.card h2{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+button{font:700 1rem/1.2 var(--fb);cursor:pointer;color:var(--ink);background:var(--card);border:2px solid var(--edge);border-radius:6px;padding:10px 16px;min-height:46px;box-shadow:3px 3px 0 var(--edge);transition:transform .1s,box-shadow .1s,background .15s}
+button:hover:not(:disabled){background:color-mix(in srgb,var(--brass) 14%,var(--card))}
+button:active:not(:disabled){transform:translate(3px,3px);box-shadow:0 0 0 var(--edge)}
+button.main{background:var(--brass);color:var(--on-brass)}
+button.main:hover:not(:disabled){background:color-mix(in srgb,var(--brass) 88%,#fff)}
+button:disabled{opacity:.5;cursor:default}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,summary:focus-visible{outline:3px solid var(--red);outline-offset:3px}
+input,select,textarea{font:500 1.08rem var(--fb);width:100%;padding:10px 12px;min-height:46px;border:2px solid var(--edge);border-radius:6px;background:var(--card);color:var(--ink)}
+label{font-weight:700}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.chip{padding:8px 12px;min-height:42px}
+.lis{min-height:34px;padding:0 9px;font-size:1rem;vertical-align:middle;margin-left:6px;box-shadow:2px 2px 0 var(--edge)}
+.snd{position:fixed;top:calc(env(safe-area-inset-top,0px) + 14px);right:12px;z-index:5;min-width:46px;padding:2px 10px;border-radius:50%}
+.lv{display:inline-block;font:700 .78rem/1.5 var(--fm);background:var(--green);color:var(--on-green);border-radius:4px;padding:0 7px;margin-right:6px;vertical-align:2px}
+summary{cursor:pointer;font:800 1.3rem var(--fd);text-transform:uppercase}
+ul{padding-left:1.2em;margin:.4em 0}li{margin:.3em 0}ol{padding-left:1.3em}
+
+/* --- The locomotive (inline SVG) --- */
+.loco{display:block;width:64px;height:34px;overflow:visible}
+.loco .lb{stroke:var(--edge);stroke-width:2;stroke-linejoin:round}
+
+/* --- Masthead: enamel station sign --- */
+.masthead{position:relative;margin:10px 0 26px;padding:26px 28px 70px;background:var(--green);color:var(--on-green);border:2px solid var(--edge);border-radius:12px;box-shadow:var(--sh),inset 0 0 0 6px var(--green),inset 0 0 0 8px var(--brass);overflow:hidden}
+.masthead h1{color:var(--on-green);font-size:clamp(3rem,10vw,5.6rem);margin:.08em 0 .1em;text-shadow:3px 3px 0 color-mix(in srgb,#000 35%,transparent)}
+.masthead .eyebrow{color:var(--brass)}
+.masthead .subtitle{font-size:1.1rem;max-width:34em;opacity:.92}
+.mast-rail{position:absolute;left:8px;right:8px;bottom:12px;height:44px;border-bottom:4px solid var(--brass)}
+.mast-rail:before{content:"";position:absolute;left:0;right:0;bottom:-10px;height:6px;background:repeating-linear-gradient(90deg,var(--brass) 0 4px,transparent 4px 18px);opacity:.7}
+.mast-train{position:absolute;bottom:0;left:-40%;display:flex;align-items:flex-end;gap:3px;animation:runby 14s linear infinite}
+.mast-train i{display:block;width:46px;height:24px;border:2px solid var(--edge);border-radius:4px 4px 2px 2px;background:var(--brass);margin-bottom:5px}
+@keyframes runby{to{left:105%}}
+
+/* --- Daily ticket --- */
+.feature-card{display:grid;grid-template-columns:1fr 150px;padding:0;position:relative;overflow:visible}
+.feature-main{padding:20px}
+.feature-stub{border-left:2px dashed var(--edge);padding:20px 14px;text-align:center;display:flex;flex-direction:column;justify-content:center;gap:2px;background:color-mix(in srgb,var(--brass) 22%,var(--card));border-radius:0 6px 6px 0;font-family:var(--fm);font-size:.78rem;text-transform:uppercase;letter-spacing:.08em}
+.feature-stub b{font:900 3.4rem/1 var(--fd)}
+.feature-card:before,.feature-card:after{content:"";position:absolute;right:139px;width:22px;height:22px;border-radius:50%;background:var(--bg);border:2px solid var(--edge)}
+.feature-card:before{top:-13px;clip-path:inset(50% 0 0 0)}.feature-card:after{bottom:-13px;clip-path:inset(0 0 50% 0)}
+.feature-top{display:block}.feature-emoji{display:none}
+
+/* --- Topic lines (route map) --- */
+.menu-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:22px;margin:18px 0}
+.topic-card{--topic:var(--lG);background:var(--card);border:2px solid var(--edge);border-radius:8px;box-shadow:var(--sh);padding:18px 18px 16px;min-width:0;animation:rise .4s both}
+.topic-card[data-topic="G"]{--topic:var(--lG)}.topic-card[data-topic="V"]{--topic:var(--lV)}.topic-card[data-topic="E"]{--topic:var(--lE)}.topic-card[data-topic="W"]{--topic:var(--lW)}
+.topic-head{display:flex;align-items:center;gap:12px;margin-bottom:14px;padding-bottom:12px;border-bottom:2px solid var(--edge)}
+.topic-icon{flex:none;width:52px;height:52px;border-radius:50%;background:var(--topic);color:#fff;border:3px solid var(--edge);display:grid;place-items:center;font:900 1.7rem/1 var(--fd);box-shadow:inset 0 0 0 3px color-mix(in srgb,#fff 35%,transparent)}
+.topic-head h3{margin:0;font-size:1.6rem}.topic-head p{margin:2px 0 0;font-size:.85rem;color:var(--mute)}
+.subtopics{position:relative;display:grid;gap:0;padding-left:30px}
+.subtopics:before{content:"";position:absolute;left:10px;top:12px;bottom:12px;width:7px;border-radius:4px;background:var(--topic)}
+.subtopic{position:relative;display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;min-height:40px;padding:7px 8px;text-align:left;font-weight:600;font-size:.98rem;background:transparent;border:0;box-shadow:none;border-radius:4px}
+.subtopic:before{content:"";position:absolute;left:-26px;top:50%;width:13px;height:13px;margin-top:-8.5px;border-radius:50%;background:var(--card);border:3px solid var(--edge);transition:transform .15s,background .15s}
+.subtopic:hover:not(:disabled){background:color-mix(in srgb,var(--topic) 13%,transparent)}
+.subtopic:hover:before{background:var(--topic);transform:scale(1.25)}
+.subtopic:active:not(:disabled){transform:none}
+.sub-count{flex:none;font:400 .72rem var(--fm);color:var(--mute);white-space:nowrap}
+.subhead{position:relative;font:700 .7rem var(--fm);letter-spacing:.12em;text-transform:uppercase;color:var(--mute);margin:12px 0 4px -30px;padding-left:30px}
+.subhead:first-child{margin-top:0}
+.topic-all{margin-top:14px;width:100%;background:var(--topic);color:#fff;text-shadow:0 1px 0 color-mix(in srgb,#000 30%,transparent)}
+.topic-all:hover:not(:disabled){background:color-mix(in srgb,var(--topic) 85%,#000)}
+.details-card{background:color-mix(in srgb,var(--bg2) 50%,var(--card))}
+.unit-pick{display:inline-flex;border:2px solid var(--edge);border-radius:6px;overflow:hidden;box-shadow:3px 3px 0 var(--edge)}
+.unit-pick button{border:0;border-radius:0;box-shadow:none;min-height:40px;padding:6px 14px}
+.unit-pick button+button{border-left:2px solid var(--edge)}
+.unit-pick button[aria-pressed="true"]{background:var(--green);color:var(--on-green)}
+
+/* --- Question ticket --- */
+.ticket{position:relative}
+.ticket h2{font:700 1.45rem/1.3 var(--fb);text-transform:none;letter-spacing:0;padding-bottom:14px;margin-bottom:14px;border-bottom:2px dashed var(--line)}
+.bar{height:12px;border:2px solid var(--edge);border-radius:3px;background:var(--card);overflow:hidden;margin:10px 0}
+.bar i{display:block;height:100%;width:100%;background:repeating-linear-gradient(-45deg,var(--brass) 0 10px,color-mix(in srgb,var(--brass) 75%,var(--edge)) 10px 20px);transition:width .1s linear}
+.opts{display:grid;gap:10px;margin:12px 0;counter-reset:o}
+.opts button{display:flex;align-items:center;gap:14px;text-align:left;padding:10px 14px 10px 10px;font-size:1.06rem;font-weight:600}
+.opts button:before{counter-increment:o;content:counter(o);flex:none;width:34px;height:34px;display:grid;place-items:center;border-radius:4px;background:var(--green);color:var(--on-green);font:900 1.3rem/1 var(--fd)}
+.opts button.on{background:var(--brass);color:var(--on-brass)}
+.opts button.ok{background:var(--good);color:#fff}.opts button.no{background:var(--bad);color:#fff}
+.opts button:disabled{opacity:1}.opts button:disabled:not(.ok):not(.no){opacity:.5}
+.opts button.ok{animation:pop .4s}
+.slot{min-height:58px;border:2px dashed var(--edge);border-radius:6px;padding:8px;display:flex;gap:6px;flex-wrap:wrap;margin:8px 0;background:color-mix(in srgb,var(--bg2) 40%,transparent)}
+.fb{border-left:8px solid var(--mid);padding:8px 14px;margin:14px 0;background:color-mix(in srgb,var(--mid) 12%,var(--card));border-radius:0 6px 6px 0;animation:rise .3s both}
+.fb.good{border-color:var(--good);background:color-mix(in srgb,var(--good) 12%,var(--card))}.fb.none{border-color:var(--bad);background:color-mix(in srgb,var(--bad) 10%,var(--card))}
+.fs{font-weight:700;color:var(--good)}
+.tip{background:var(--card);border:2px dashed var(--edge);border-radius:6px;padding:9px 13px;margin:10px 0;font-size:.95rem}
+
+/* --- Route strip (solo journey) --- */
+.track{position:relative;height:96px;margin:16px 0 6px;border:2px solid var(--edge);border-radius:8px;overflow:visible;box-shadow:3px 3px 0 var(--edge)}
+.track .scene{position:absolute;inset:0;border-radius:6px;background:
+ radial-gradient(circle at 88% 28%,var(--sun) 0 11px,transparent 12px),
+ radial-gradient(70% 90% at 15% 140%,var(--hill1) 0 60%,transparent 61%),
+ radial-gradient(60% 80% at 62% 150%,var(--hill2) 0 60%,transparent 61%),
+ radial-gradient(70% 90% at 98% 140%,var(--hill1) 0 58%,transparent 59%),
+ linear-gradient(var(--sky),color-mix(in srgb,var(--sky) 50%,var(--card)))}
+.track:before{content:"";position:absolute;left:6px;right:6px;bottom:16px;height:6px;z-index:1;background:repeating-linear-gradient(90deg,var(--edge) 0 3px,transparent 3px 11px)}
+.track:after{content:"";position:absolute;left:6px;right:6px;bottom:21px;height:3px;background:var(--edge);z-index:1}
+.track .stn{position:absolute;bottom:14px;width:12px;height:12px;margin-left:-6px;border-radius:50%;background:var(--card);border:3px solid var(--edge);z-index:2}
+.track b{position:absolute;bottom:22px;z-index:3;transform:translateX(-50%);transition:left .9s cubic-bezier(.45,.05,.3,1)}
+.track b.run .loco{animation:chug .2s infinite}
+@keyframes chug{50%{transform:translateY(-2px)}}
+.puff{position:absolute;bottom:62px;z-index:4;width:10px;height:10px;margin-left:8px;border-radius:50%;background:color-mix(in srgb,var(--card) 70%,var(--mute));pointer-events:none;animation:puff .9s ease-out forwards}
+@keyframes puff{from{transform:translate(0,0) scale(.4);opacity:.85}to{transform:translate(-18px,-24px) scale(1.7);opacity:0}}
+.ends{display:flex;justify-content:space-between;font:700 .76rem var(--fm);text-transform:uppercase;letter-spacing:.06em;color:var(--mute)}
+.train{display:flex;gap:4px;align-items:flex-end;margin:12px 0 18px;flex-wrap:wrap}
+.train .loco{width:56px;height:30px}
+.cx{position:relative;width:36px;height:24px;margin-bottom:5px;border:2px solid var(--edge);border-radius:4px 4px 2px 2px;background-size:100% 8px;background-position:0 4px;background-repeat:no-repeat}
+.cx.good{background-color:var(--good);background-image:repeating-linear-gradient(90deg,transparent 0 4px,color-mix(in srgb,#fff 80%,transparent) 4px 9px)}
+.cx.mid{background-color:var(--mid);background-image:repeating-linear-gradient(90deg,transparent 0 4px,color-mix(in srgb,#fff 80%,transparent) 4px 9px)}
+.cx.none{background:transparent;border-style:dashed}
+.cx:after{content:"";position:absolute;left:2px;right:2px;bottom:-8px;height:6px;background:radial-gradient(circle,var(--edge) 0 2.6px,transparent 3px) 0 0/16px 6px repeat-x}
+.cx.new{animation:couple .45s both}
+
+/* --- Lessons, results report --- */
+.exl{list-style:none;padding:0;margin:6px 0}.exl li{padding:9px 0;border-bottom:1px dashed var(--line)}
+.study{border:2px solid var(--edge);border-left:8px solid var(--green);border-radius:6px;padding:10px 12px;margin:10px 0}.study p{margin:4px 0 8px}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:14px 0}
+.kpi{border:2px solid var(--edge);border-radius:6px;padding:10px 6px;text-align:center;background:var(--board);color:var(--amber)}
+.kpi b{display:block;font:700 1.9rem/1.1 var(--fm)}
+.kpi span{font:400 .72rem var(--fm);text-transform:uppercase;color:var(--amber-dim)}
+.report h3{margin:20px 0 6px}
+.rt{width:100%;border-collapse:collapse}.rt td{padding:5px 6px}
+.pb{display:block;height:12px;min-width:80px;background:var(--line);border-radius:3px;overflow:hidden}.pb i{display:block;height:100%;background:var(--good)}
+.qlist{list-style:none;padding:0;margin:0}
+.qlist li{border-left:8px solid var(--line);padding:9px 13px;margin:10px 0;background:color-mix(in srgb,var(--bg2) 35%,var(--card));border-radius:0 6px 6px 0}
+.qlist li.q-good{border-color:var(--good)}.qlist li.q-mid{border-color:var(--mid)}.qlist li.q-none{border-color:var(--bad)}
+.qh{display:flex;gap:8px;font-weight:700}.qa{font-size:.95rem}
+
+/* --- Rooms, lobby, boards --- */
+.code{display:inline-flex;gap:5px;vertical-align:middle}
+.code i{font:700 .82em/1 var(--fm);font-style:normal;width:1.05em;padding:.12em 0 .08em;text-align:center;background:var(--board);color:var(--amber);border-radius:4px;border:2px solid var(--edge);box-shadow:inset 0 -.5em 0 color-mix(in srgb,#fff 6%,transparent),inset 0 1px 0 color-mix(in srgb,#000 60%,transparent)}
+.lobby{display:flex;gap:18px;align-items:center;flex-wrap:wrap}
+.lobby img{background:#fff;padding:8px;border-radius:6px;border:2px solid var(--edge)}
+.plist{list-style:none;padding:0;margin:0;display:flex;flex-wrap:wrap;gap:10px}
+.plist li{display:flex;align-items:center;gap:8px;border:2px solid var(--edge);border-radius:6px;padding:4px 10px 4px 6px;background:var(--card);margin:0;animation:rise .3s both}
+.plist li.off{opacity:.5}.plist .loco{width:46px;height:24px}
+.mb{margin:8px 0}
+.brow{display:grid;grid-template-columns:30px 1fr 110px 74px auto;gap:10px;align-items:center;padding:6px 10px;border-radius:4px;font-family:var(--fm);font-size:.92rem;color:var(--amber);background:var(--board);border-bottom:1px solid #2a2418}
+.brow:first-child{border-radius:6px 6px 0 0}.brow:last-child{border-radius:0 0 6px 6px;border-bottom:0}
+.brow.me{color:var(--board);background:var(--amber)}.brow.off{opacity:.55}
+.rk{font-weight:700}.nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pbar{height:8px;background:#2f2a1f;border-radius:2px;overflow:hidden}.pbar i{display:block;height:100%;background:var(--amber)}
+.brow.me .pbar{background:color-mix(in srgb,var(--board) 30%,transparent)}.brow.me .pbar i{background:var(--board)}
+.mi{text-align:right;font-weight:700}
+@media(max-width:480px){.brow{grid-template-columns:24px 1fr 64px 64px}.brow .sq{display:none}}
+
+/* Departure board (live quiz scores and final arrivals) */
+.dboard{background:var(--board);color:var(--amber);border:2px solid var(--edge);border-radius:8px;box-shadow:var(--sh);padding:14px 14px 10px;font-family:var(--fm);margin:22px 0}
+.dboard h2{font:900 1.6rem/1 var(--fd);color:var(--amber);letter-spacing:.08em;margin:0 0 10px;display:flex;justify-content:space-between;gap:10px;align-items:baseline}
+.dboard h2 small{font:400 .75rem var(--fm);color:var(--amber-dim);letter-spacing:.1em}
+.drow{display:grid;grid-template-columns:2.2em 1fr auto;gap:12px;align-items:center;padding:8px 6px;border-top:1px solid #2c2618;font-size:1rem}
+.drow .st{font-size:.72rem;color:var(--amber-dim);text-transform:uppercase;letter-spacing:.06em}
+.drow b{font-weight:700;text-align:right;white-space:nowrap}
+.drow .nm{display:flex;flex-direction:column;min-width:0}
+.drow.me{background:var(--amber);color:var(--board);border-radius:4px}.drow.me .st{color:color-mix(in srgb,var(--board) 70%,transparent)}
+.drow.top{animation:flap .5s both}
+.drow:nth-child(3){animation-delay:.1s}.drow:nth-child(4){animation-delay:.2s}.drow:nth-child(5){animation-delay:.3s}
+@keyframes flap{from{transform:rotateX(90deg);opacity:0}to{transform:none;opacity:1}}
+
+/* --- Live quiz --- */
+.qmeta{padding-right:56px}
+.ticket>.row{margin-top:14px}
+.qh .lv{align-self:flex-start;flex:none}
+.live-top{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font:700 .84rem var(--fm);text-transform:uppercase;letter-spacing:.06em;padding-right:56px}
+.lcount{margin-left:auto;color:var(--mute)}
+.ticket.live h2{font-size:1.65rem;min-height:72px}
+.lclock{--p:1;float:right;position:relative;margin:0 0 10px 14px;width:76px;height:76px;border-radius:50%;border:3px solid var(--edge);background:conic-gradient(var(--brass) calc(var(--p)*1turn),var(--bg2) 0);box-shadow:3px 3px 0 var(--edge)}
+.lclock:before{content:"";position:absolute;inset:9px;border-radius:50%;background:var(--card);border:2px solid var(--edge)}
+.lclock b{position:absolute;inset:0;display:grid;place-items:center;font:900 1.9rem/1 var(--fd)}
+.lclock.low{animation:pop .5s infinite alternate}
+.lopts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:14px 0;clear:both}
+.lopt{display:flex;align-items:stretch;gap:0;padding:0;min-height:78px;text-align:left;font:700 1.15rem/1.25 var(--fb);background:var(--card);color:var(--ink);border:2px solid var(--edge);border-radius:6px;box-shadow:4px 4px 0 var(--edge);overflow:hidden}
+.lopt .txt{display:flex;align-items:center;padding:10px 14px}
+.plat{flex:none;width:70px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--green);color:var(--on-green);border-right:2px solid var(--edge)}
+.plat small{font:700 .55rem var(--fm);letter-spacing:.12em;text-transform:uppercase;opacity:.85}
+.plat b{font:900 2.2rem/1 var(--fd)}
+.lopt.on{background:var(--brass);color:var(--on-brass)}
+.lopt.on .plat{background:var(--edge)}
+div.lopt{cursor:default}
+.lword{border:2px solid var(--edge);border-radius:6px;background:var(--card);font-weight:700;box-shadow:2px 2px 0 var(--edge)}
+.lready{clear:both;font:900 2.4rem/1.2 var(--fd);text-transform:uppercase;text-align:center;margin:24px 0;animation:pop .7s infinite alternate}
+.lwait{clear:both;text-align:center;padding:18px 8px}.lwait b{display:block;font:900 2.3rem/1.1 var(--fd);text-transform:uppercase}
+.lwait .loco{margin:0 auto 10px;width:96px;height:52px}
+.boarding{list-style:none;padding:0;margin:4px 0 0;display:flex;flex-wrap:wrap;gap:8px}
+.boarding li{display:flex;align-items:center;gap:7px;margin:0;padding:4px 10px;border:2px solid var(--edge);border-radius:20px;background:var(--card);font-weight:600;font-size:.92rem}
+.boarding li:before{content:"";width:10px;height:10px;border-radius:50%;background:var(--bad);border:2px solid var(--edge)}
+.boarding li.on:before{background:var(--good);box-shadow:0 0 0 3px color-mix(in srgb,var(--good) 35%,transparent)}
+.lres{text-align:center;border-top:10px solid var(--mid)}
+.lres.good{border-top-color:var(--good)}.lres.bad{border-top-color:var(--bad)}
+.lbig{font:900 2.6rem/1.05 var(--fd);text-transform:uppercase}
+.lpts{font:700 1.5rem var(--fm);margin:6px 0}
+.ldist{display:grid;gap:10px;margin-top:14px}
+.ldrow{display:grid;grid-template-columns:46px 1fr 2.6em;gap:10px;align-items:center}
+.ldrow .plat{width:46px;height:42px;border:2px solid var(--edge);border-radius:4px}.ldrow .plat small{display:none}.ldrow .plat b{font-size:1.6rem}
+.ldrow b{text-align:right;font:700 1.15rem var(--fm)}
+.ldl{font-weight:600}.ldrow.ok .ldl{font-weight:800}.ldrow:not(.ok){opacity:.6}.ldrow.ok .plat{background:var(--good)}
+.ldbar{display:block;height:10px;margin-top:5px;min-width:4px;border-radius:2px;background:var(--mute);transition:width .7s ease}
+.ldrow.ok .ldbar{background:var(--good)}
+/* Each player's own line: one lane per train */
+.lanes{display:grid;gap:4px}
+.lanehead{display:grid;grid-template-columns:minmax(80px,150px) 1fr 76px;gap:10px;font:700 .68rem var(--fm);text-transform:uppercase;letter-spacing:.06em;color:var(--mute)}
+.lanehead span:nth-child(2){display:flex;justify-content:space-between}
+.lane{display:grid;grid-template-columns:minmax(80px,150px) 1fr 76px;gap:10px;align-items:center;min-height:44px}
+.lane .lname{font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lane .lname i{font:700 .75rem var(--fm);font-style:normal;color:var(--mute);margin-right:6px}
+.lane.me .lname{color:var(--red)}
+.lrail{position:relative;height:40px;margin:0 30px 0 0;background:linear-gradient(var(--edge),var(--edge)) 0 31px/100% 3px no-repeat,repeating-linear-gradient(90deg,var(--line) 0 3px,transparent 3px 10px) 0 33px/100% 6px no-repeat}
+.lrail:after{content:"";position:absolute;right:-30px;bottom:4px;width:26px;height:26px;border-radius:50%;border:2px solid var(--edge);background:conic-gradient(var(--edge) 0 25%,var(--card) 0 50%,var(--edge) 0 75%,var(--card) 0) 0 0/100% 100%}
+.lrail .stn{position:absolute;bottom:5px;width:9px;height:9px;margin-left:-4.5px;border-radius:50%;background:var(--card);border:2px solid var(--edge)}
+.ltrain{position:absolute;bottom:8px;left:0;transform:translateX(-50%);transition:left 1.6s cubic-bezier(.45,.05,.25,1)}
+.ltrain .loco{width:52px;height:28px}
+.lane .ld{font:700 .95rem var(--fm);text-align:right;white-space:nowrap}
+.lane .ld small{display:block;font-size:.66rem;color:var(--good)}
+.myline .track{margin-top:6px}
+
+/* --- Animations --- */
 @keyframes shake{20%,60%{transform:translateX(-7px)}40%,80%{transform:translateX(7px)}}
-@keyframes pop{0%{transform:scale(.94)}60%{transform:scale(1.03)}100%{transform:scale(1)}}
+@keyframes pop{0%{transform:scale(.95)}60%{transform:scale(1.03)}100%{transform:scale(1)}}
 @keyframes couple{from{transform:translateX(44px);opacity:0}to{transform:none;opacity:1}}
-@keyframes chug{50%{margin-top:-3px}}
-@keyframes puff{from{transform:translate(0,0) scale(.4);opacity:.75}to{transform:translate(-20px,-26px) scale(1.5);opacity:0}}
 @keyframes rise{from{transform:translateY(10px);opacity:0}to{transform:none;opacity:1}}
 @keyframes fall{to{transform:translateY(112vh) rotate(540deg)}}
-.card{animation:rise .35s both}
-.fb{animation:rise .3s both}
-.card.shake{animation:shake .4s}
-.card.pop{animation:pop .35s}
-.opts button.ok{animation:pop .4s}
-.cx.new{animation:couple .45s both}
-.track b.run{animation:chug .22s infinite}
-.puff{position:absolute;top:2px;width:9px;height:9px;margin-left:-14px;border-radius:50%;background:var(--mute);pointer-events:none;animation:puff .9s ease-out forwards}
+.card.shake{animation:shake .4s}.card.pop{animation:pop .35s}
 .conf{position:fixed;top:-16px;width:9px;height:14px;pointer-events:none;z-index:9;animation:fall 2.4s ease-in forwards}
-select,textarea{font:inherit;width:100%;padding:10px 12px;border:1.5px solid var(--ink);border-radius:8px;background:var(--card);color:var(--ink);min-height:44px}
-summary{cursor:pointer;font-weight:700}
-ol{padding-left:1.3em}
-.snd{position:fixed;top:calc(env(safe-area-inset-top,0px) + 8px);right:10px;z-index:5;min-height:40px;min-width:44px;padding:2px 10px;background:var(--card)}
-@media (prefers-reduced-motion:reduce){*,*:before{animation:none!important;transition:none!important}}
-:root{--bg:#e9f2f8;--card:#fff;--ink:#14365c;--mute:#5a7088;--line:#c6d6e4;--acc:#e0382c;--good:#1f9d57;--mid:#e5a100;--bad:#d6382d;--rail:#14365c;--edge:#14365c;--yel:#ffd23f;--onyel:#14365c;--sky1:#bfe0f5;--sky2:#e8f4fb;--hill1:#94c9a4;--hill2:#6fb08c;--sun:#ffd23f}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0c1d33;--card:#14294a;--ink:#e8f1fa;--mute:#9fb4c9;--line:#27415f;--acc:#ff6a5c;--good:#3fc77a;--mid:#f2b73a;--bad:#ff7366;--rail:#bcd3ea;--edge:#3f6591;--sky1:#0b1d3a;--sky2:#1a3a66;--hill1:#1f5059;--hill2:#17414d;--sun:#f4e7b0}}
-:root[data-theme="dark"]{--bg:#0c1d33;--card:#14294a;--ink:#e8f1fa;--mute:#9fb4c9;--line:#27415f;--acc:#ff6a5c;--good:#3fc77a;--mid:#f2b73a;--bad:#ff7366;--rail:#bcd3ea;--edge:#3f6591;--sky1:#0b1d3a;--sky2:#1a3a66;--hill1:#1f5059;--hill2:#17414d;--sun:#f4e7b0}
-body{font-family:"Barlow","Gill Sans","Trebuchet MS",system-ui,sans-serif;font-size:18px;background:var(--bg) linear-gradient(var(--sky1),var(--bg) 340px) no-repeat}
-h1,h2{font-family:"Barlow Condensed","Arial Narrow","Franklin Gothic Medium",sans-serif;letter-spacing:.005em}
-h1{font-weight:800;font-size:3rem;line-height:1;margin:.2em 0 .12em}
-h2{font-weight:700;font-size:1.6rem;margin:.1em 0 .4em}
-.card{background:var(--card);border:2px solid var(--edge);border-radius:18px;box-shadow:0 5px 0 var(--edge);padding:18px;margin:18px 0}
-.ticket h2{font-family:"Barlow","Gill Sans",system-ui,sans-serif;font-weight:600;font-size:1.4rem;line-height:1.3;padding-bottom:12px;margin-bottom:14px;border-bottom:2px dashed var(--line)}
-button{font-family:inherit;font-weight:600;border:2px solid var(--edge);border-radius:12px;background:var(--card);color:var(--ink);box-shadow:0 3px 0 var(--edge);transition:transform .08s,box-shadow .08s}
-button:active:not(:disabled){transform:translateY(3px);box-shadow:0 0 0 var(--edge)}
-button.main{background:var(--yel);color:var(--onyel);font-weight:700}
-button:disabled{opacity:.5}
-.opts{counter-reset:o;gap:10px}
-.opts button{display:flex;align-items:center;gap:12px;padding:12px 14px;font-size:1.05rem}
-.opts button:before{counter-increment:o;content:counter(o,upper-alpha);flex:none;width:28px;height:28px;border-radius:50%;background:var(--rail);color:var(--card);display:grid;place-items:center;font-size:.85rem;font-weight:700}
-.opts button.on{background:var(--yel);color:var(--onyel)}
-.opts button.ok{background:var(--good);color:#fff;border-color:var(--edge)}
-.opts button.no{background:var(--bad);color:#fff;border-color:var(--edge)}
-.opts button:disabled{opacity:1}
-.opts button:disabled:not(.ok):not(.no){opacity:.55}
-input,select,textarea{border:2px solid var(--edge);border-radius:12px;font-size:1.1rem}
-.lv{background:var(--yel);color:var(--onyel);border:2px solid var(--edge);border-radius:6px;padding:0 7px;font-weight:700}
-.bar{height:12px;border-radius:7px;border:2px solid var(--edge);background:var(--line)}
-.bar i{background:var(--yel)}
-.track{height:92px;margin:16px 22px 6px;overflow:visible}
-.track .scene{position:absolute;inset:0;z-index:0;border-radius:16px;border:2px solid var(--edge);background:radial-gradient(circle at 86% 26%,var(--sun) 0 10px,transparent 11px),radial-gradient(90% 70% at 18% 135%,var(--hill1) 0 58%,transparent 59%),radial-gradient(80% 65% at 78% 140%,var(--hill2) 0 58%,transparent 59%),linear-gradient(var(--sky1),var(--sky2))}
-.track:before{top:auto;bottom:17px;height:5px;opacity:1;z-index:1;background:repeating-linear-gradient(90deg,var(--edge) 0 3px,transparent 3px 12px)}
-.track:after{content:"";position:absolute;left:0;right:0;bottom:22px;height:3px;background:var(--edge);z-index:1}
-.track .stn{position:absolute;bottom:14px;width:10px;height:10px;margin-left:-5px;border-radius:50%;background:var(--card);border:3px solid var(--edge);z-index:2}
-.track b{top:auto;bottom:21px;font-size:2.3rem;z-index:3;transform:translateX(-50%) scaleX(-1)}
-@keyframes chug{50%{margin-bottom:3px}}
-.puff{top:auto;bottom:56px}
-.ends{margin:0 22px;font-weight:600}
-.cx{width:34px;height:24px;border-radius:6px 6px 3px 3px;border:2px solid var(--edge);position:relative;background-size:100% 9px;background-position:0 4px;background-repeat:no-repeat}
-.cx.good{background-color:var(--good);background-image:repeating-linear-gradient(90deg,transparent 0 4px,rgba(255,255,255,.8) 4px 9px)}
-.cx.mid{background-color:var(--mid);background-image:repeating-linear-gradient(90deg,transparent 0 4px,rgba(255,255,255,.8) 4px 9px)}
-.cx:after{content:"";position:absolute;left:2px;right:2px;bottom:-8px;height:6px;background:radial-gradient(circle at 50% 50%,var(--edge) 0 2.6px,transparent 3px) 0 0/16px 6px repeat-x}
-.train{margin:12px 0 18px}
-.fb{border-radius:0 10px 10px 0}
-.snd{border-radius:50%;min-width:44px}
-@media (max-width:380px){h1{font-size:2.5rem}}
 
-/* Visual refresh: lively dashboard, clearer hierarchy, and topic collections */
-:root{--bg:#f2f6ff;--card:#ffffff;--ink:#17294d;--mute:#63728e;--line:#dbe3f2;--acc:#ff6b55;--good:#219b68;--mid:#e4a11b;--bad:#dc4f5c;--rail:#17294d;--edge:#263d68;--yel:#ffe06b;--onyel:#17294d;--sky1:#d9eaff;--sky2:#f4f7ff;--hill1:#9fd8bd;--hill2:#68bca4;--sun:#ffda69}
-@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0c1426;--card:#151f36;--ink:#edf3ff;--mute:#a7b5d0;--line:#2a3855;--acc:#ff806d;--good:#48cb91;--mid:#ffd166;--bad:#ff7d87;--rail:#e4edff;--edge:#4b628b;--yel:#ffdc72;--onyel:#17294d;--sky1:#14294a;--sky2:#202e4a;--hill1:#326b61;--hill2:#285a56;--sun:#ffd166}}
-:root[data-theme="dark"]{--bg:#0c1426;--card:#151f36;--ink:#edf3ff;--mute:#a7b5d0;--line:#2a3855;--acc:#ff806d;--good:#48cb91;--mid:#ffd166;--bad:#ff7d87;--rail:#e4edff;--edge:#4b628b;--yel:#ffdc72;--onyel:#17294d;--sky1:#14294a;--sky2:#202e4a;--hill1:#326b61;--hill2:#285a56;--sun:#ffd166}
-body{background:radial-gradient(ellipse at 90% 0%,color-mix(in srgb,var(--sky1) 75%,transparent),transparent 440px),var(--bg);}
-main{max-width:850px;padding:28px 22px 56px}
-h1{font-size:clamp(2.8rem,7vw,4.5rem);letter-spacing:-.035em;line-height:.95;margin:.25em 0 .18em;text-shadow:0 2px 0 color-mix(in srgb,var(--ink) 8%,transparent)}
-h2{font-size:1.65rem}
-.masthead{position:relative;padding:28px 28px 24px;margin:6px 0 22px;border:2px solid var(--edge);border-radius:26px;overflow:hidden;background:linear-gradient(120deg,var(--card),color-mix(in srgb,var(--sky1) 72%,var(--card)));box-shadow:0 7px 0 var(--edge)}
-.masthead:after{content:'🚂';position:absolute;right:22px;bottom:8px;font-size:clamp(3.5rem,10vw,6rem);opacity:.17;transform:scaleX(-1) rotate(-2deg);pointer-events:none}
-.masthead>*{position:relative;z-index:1;max-width:75%}.eyebrow{font-size:.76rem;font-weight:800;letter-spacing:.15em;text-transform:uppercase;color:var(--acc)}
-.masthead .subtitle{font-size:1.08rem;color:var(--mute);max-width:65%}
-.card{border:2px solid var(--edge);border-radius:20px;box-shadow:0 5px 0 color-mix(in srgb,var(--edge) 92%,transparent);padding:20px;margin:18px 0;background:var(--card)}
-.card h2{display:flex;align-items:center;gap:9px}
-button{border-radius:13px;box-shadow:0 3px 0 var(--edge);transition:transform .14s ease,box-shadow .14s ease,filter .14s ease}
-button:hover:not(:disabled){filter:brightness(1.035);transform:translateY(-1px)}
-button:active:not(:disabled){transform:translateY(2px);box-shadow:0 1px 0 var(--edge)}
-button.main{background:var(--yel);color:var(--onyel)}
-.row button{flex:0 1 auto}
-.menu-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin:18px 0}
-.topic-card{--topic:#4c8bf5;position:relative;min-width:0;margin:0;padding:18px;border-radius:20px;border:2px solid var(--edge);border-top:8px solid var(--topic);background:var(--card);box-shadow:0 5px 0 var(--edge);animation:rise .35s both}
-.topic-card[data-topic="G"]{--topic:#8b72e8}.topic-card[data-topic="V"]{--topic:#e9a23b}.topic-card[data-topic="E"]{--topic:#27a88b}.topic-card[data-topic="W"]{--topic:#4d8de6}
-.topic-head{display:flex;align-items:center;gap:12px;margin-bottom:12px}.topic-icon{width:48px;height:48px;flex:none;display:grid;place-items:center;border-radius:15px;background:color-mix(in srgb,var(--topic) 16%,var(--card));font-size:1.8rem}
-.topic-head h3{font-size:1.35rem;line-height:1.05;margin:0;font-family:"Barlow Condensed","Arial Narrow",sans-serif}.topic-head p{font-size:.88rem;color:var(--mute);margin:4px 0 0}
-.subtopics{display:grid;grid-template-columns:1fr;gap:8px}.subtopic{width:100%;min-height:42px;text-align:left;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 11px;font-size:.95rem;border:1.5px solid var(--line);box-shadow:none;background:color-mix(in srgb,var(--topic) 5%,var(--card))}.subtopic:before{content:none!important}.subtopic .sub-count{flex:none;font-size:.76rem;color:var(--mute);background:var(--bg);padding:2px 7px;border-radius:99px}
-.subtopic:hover:not(:disabled){border-color:var(--topic);box-shadow:0 2px 0 var(--topic)}
-.topic-all{margin-top:10px;width:100%;font-size:.9rem;box-shadow:none;border-style:dashed}
-.feature-card{background:linear-gradient(120deg,color-mix(in srgb,var(--yel) 23%,var(--card)),var(--card) 75%)}
-.feature-top{display:flex;justify-content:space-between;gap:14px;align-items:flex-start}.feature-emoji{font-size:2.3rem;line-height:1}
-.section-kicker{font-size:.76rem;font-weight:800;letter-spacing:.13em;text-transform:uppercase;color:var(--mute);margin-bottom:5px}
-.menu-actions{display:grid;grid-template-columns:1fr 1fr;gap:12px}.menu-actions button{width:100%}
-.track{margin-left:8px;margin-right:8px}.ends{margin-left:8px;margin-right:8px}
-.details-card{background:color-mix(in srgb,var(--sky1) 23%,var(--card))}
-.snd{border:2px solid var(--edge);box-shadow:0 3px 0 var(--edge);background:var(--card)}
-@media(max-width:620px){main{padding:18px 13px 42px}.menu-grid{grid-template-columns:1fr;gap:13px}.masthead{padding:23px 19px}.masthead>*{max-width:82%}.masthead .subtitle{max-width:78%}.topic-card{padding:16px}.menu-actions{grid-template-columns:1fr}.card{padding:17px}.track{margin-left:4px;margin-right:4px}}
-@media(prefers-reduced-motion:reduce){.topic-card{animation:none}}
-
-.subhead{font-weight:800;font-size:.78rem;letter-spacing:.1em;text-transform:uppercase;color:var(--mute);margin:8px 0 0}
-.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:14px 0}
-.kpi{border:2px solid var(--edge);border-radius:14px;padding:10px 6px;text-align:center;background:var(--bg)}
-.kpi b{display:block;font:800 2rem/1 "Barlow Condensed","Arial Narrow",sans-serif}
-.kpi span{font-size:.85rem;color:var(--mute)}
-.report h3{font:700 1.25rem "Barlow Condensed","Arial Narrow",sans-serif;margin:18px 0 6px}
-.rt{width:100%;border-collapse:collapse}.rt td{padding:5px 6px}
-.pb{display:block;height:12px;background:var(--line);border-radius:6px;overflow:hidden;min-width:80px}
-.pb i{display:block;height:100%;background:var(--good)}
-.qlist{list-style:none;padding:0;margin:0}
-.qlist li{border-left:6px solid var(--line);padding:8px 12px;margin:10px 0;background:var(--bg);border-radius:0 12px 12px 0}
-.qlist li.q-good{border-color:var(--good)}.qlist li.q-mid{border-color:var(--mid)}.qlist li.q-none{border-color:var(--bad)}
-.qh{display:flex;gap:8px;font-weight:600}.qa{font-size:.95rem}
-@media(max-width:560px){.kpis{grid-template-columns:repeat(2,1fr)}}
-.tip{background:var(--bg);border:2px dashed var(--line);border-radius:12px;padding:8px 12px;margin:10px 0;font-size:.95rem}
-.fs{font-weight:700;color:var(--good)}
-.lis{min-height:32px;padding:0 8px;font-size:1rem;vertical-align:middle;margin-left:6px;box-shadow:none}
-.study{border:2px solid var(--edge);border-radius:14px;padding:10px 12px;margin:8px 0}.study p{margin:4px 0 8px}
-.exl{list-style:none;padding:0;margin:6px 0}.exl li{padding:8px 0;border-bottom:1px dashed var(--line)}
-.code{background:var(--yel);color:var(--onyel);padding:0 .3em;border-radius:10px;letter-spacing:.12em}
-.lobby{display:flex;gap:16px;align-items:center;flex-wrap:wrap}
-.lobby img{background:#fff;padding:8px;border-radius:12px;border:2px solid var(--edge)}
-.plist{list-style:none;padding:0;margin:0;display:flex;flex-wrap:wrap;gap:8px}
-.plist li{border:2px solid var(--edge);border-radius:20px;padding:4px 12px;background:var(--bg)}.plist li.off{opacity:.5}
-.mb{margin:8px 0}
-.brow{display:grid;grid-template-columns:28px 1fr 90px 64px auto;gap:8px;align-items:center;padding:4px 8px;border-radius:10px}
-.brow.me{background:var(--yel);color:var(--onyel)}.brow.off{opacity:.55}
-.rk{font-weight:800}.nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.pbar{height:8px;background:var(--line);border-radius:4px;overflow:hidden}.pbar i{display:block;height:100%;background:var(--good)}
-.mi{text-align:right;font-weight:700}
-@media(max-width:480px){.brow{grid-template-columns:24px 1fr 56px 56px}.brow .sq{display:none}}
-.live-top{display:flex;gap:6px;align-items:center;flex-wrap:wrap;font-weight:700;padding-right:52px}
-.lcount{margin-left:auto;color:var(--mute);font-size:.95rem}
-.ticket.live h2{font-size:1.6rem;min-height:64px}
-.ltime{float:right;margin:0 0 8px 12px;width:64px;height:64px;border-radius:50%;border:3px solid var(--edge);display:grid;place-items:center;font:800 1.9rem/1 "Barlow Condensed","Arial Narrow",sans-serif;background:var(--yel);color:var(--onyel)}
-.lopts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:12px 0;clear:both}
-.lopt{display:flex;align-items:center;gap:12px;min-height:76px;padding:12px 14px;border-radius:14px;border:2px solid var(--edge);background:var(--c);color:#fff;font-weight:700;font-size:1.15rem;text-align:left;box-shadow:0 4px 0 var(--edge)}
-.lopt .shp{font-size:1.5rem;flex:none;width:1.4em;text-align:center}
-.lopt.on{outline:4px solid var(--ink);outline-offset:3px}
-.lword{border:2px solid var(--edge);border-radius:12px;background:var(--bg);font-weight:700}
-.lready{clear:both;font:800 2.2rem/1.2 "Barlow Condensed","Arial Narrow",sans-serif;text-align:center;margin:22px 0;animation:pop .7s infinite alternate}
-.lwait{clear:both;text-align:center;padding:18px 8px}.lwait b{display:block;font:800 2.2rem/1.15 "Barlow Condensed","Arial Narrow",sans-serif}
-.lres{text-align:center}.lres.good{background:color-mix(in srgb,var(--good) 20%,var(--card))}.lres.mid{background:color-mix(in srgb,var(--mid) 22%,var(--card))}.lres.bad{background:color-mix(in srgb,var(--bad) 18%,var(--card))}
-.lbig{font:800 2.5rem/1.1 "Barlow Condensed","Arial Narrow",sans-serif}
-.lpts{font-size:1.3rem;font-weight:700}
-.ldist{display:grid;gap:10px;margin-top:12px}
-.ldrow{display:grid;grid-template-columns:1.6em 1fr 2.4em;gap:8px;align-items:center}.ldrow b{text-align:right;font-size:1.2rem}
-.ldrow .shp{font-size:1.3rem;text-align:center}.ldrow.ok .ldl{font-weight:800}.ldrow:not(.ok){opacity:.65}
-.ldbar{display:block;height:12px;margin-top:4px;min-width:4px;border-radius:6px;background:var(--c);transition:width .6s ease}
-.lboard{list-style:none;padding:0;margin:0}
-.lboard li{display:flex;gap:10px;align-items:center;padding:8px 12px;margin:6px 0;border:2px solid var(--line);border-radius:12px;font-weight:600}
-.lboard li.me{background:var(--yel);color:var(--onyel);border-color:var(--edge)}
-.lboard .rk{width:1.6em;font-weight:800}.lboard .sc{margin-left:auto;font-weight:800}
-.podium{display:flex;justify-content:center;align-items:flex-end;gap:10px;margin:22px 0 8px}
-.pod{flex:1;min-width:0;max-width:180px;text-align:center}
-.pname{font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-bottom:6px}
-.pblock{display:flex;flex-direction:column;justify-content:center;border:2px solid var(--edge);border-radius:14px 14px 4px 4px;box-shadow:0 4px 0 var(--edge);animation:rise .7s both}
-.pblock b{font:800 2.8rem/1 "Barlow Condensed","Arial Narrow",sans-serif}
-.p1 .pblock{height:160px;background:var(--yel);color:var(--onyel)}.p2 .pblock{height:115px;background:color-mix(in srgb,var(--line) 75%,var(--card));animation-delay:.25s}.p3 .pblock{height:85px;background:color-mix(in srgb,var(--mid) 35%,var(--card));animation-delay:.5s}
-@media(max-width:480px){.lopts{grid-template-columns:1fr}.lopt{min-height:58px}.ticket.live h2{font-size:1.35rem}}
+@media(max-width:640px){
+ main{padding:20px 14px 46px}
+ .menu-grid{grid-template-columns:1fr;gap:18px}
+ .masthead{padding:22px 20px 66px}
+ .feature-card{grid-template-columns:1fr 96px}.feature-card:before,.feature-card:after{right:85px}.feature-stub b{font-size:2.5rem}
+ .kpis{grid-template-columns:repeat(2,1fr)}
+ .lopts{grid-template-columns:1fr}.lopt{min-height:60px}.plat{width:58px}
+ .ticket.live h2{font-size:1.35rem}
+ .lane,.lanehead{grid-template-columns:72px 1fr 58px;gap:6px}.lrail{margin-right:22px}.lrail:after{right:-22px;width:18px;height:18px;bottom:8px}
+ .ltrain .loco{width:42px;height:23px}
+}
+@media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important}}
 </style>
 </head>
 <body>
@@ -912,8 +983,8 @@ const SFX={
  fanfare:()=>[523,659,784,1047].forEach((f,i)=>tone(f,.3,'triangle',i*.15,.2))
 };
 function initSnd(){const b=$('#snd'),r=()=>{b.textContent=muted?'🔇':'🔊';b.setAttribute('aria-label',muted?'Sound is off. Turn sound on':'Sound is on. Turn sound off')};r();b.onclick=()=>{muted=!muted;store('cc_mute',muted?'1':'0');r();if(!muted)SFX.click()}}
-function adv(m){const b=$('.track b');if(!b)return;b.style.left=Math.min(100,m/TOTAL*100)+'%';b.classList.add('run');const e=$('.ends span:nth-child(2)');if(e)e.textContent=Math.min(m,TOTAL)+' / '+TOTAL+' miles';let n=0;const iv=setInterval(()=>{const p=document.createElement('i');p.className='puff';p.style.left=b.offsetLeft+'px';b.parentNode.appendChild(p);setTimeout(()=>p.remove(),950);if(++n>4){clearInterval(iv);b.classList.remove('run')}},130)}
-function confetti(){if(matchMedia('(prefers-reduced-motion:reduce)').matches)return;const cs=['#c8102e','#23874a','#c58b00','#2a5db0','#e8eef6'];for(let i=0;i<46;i++){const e=document.createElement('i');e.className='conf';e.style.left=Math.random()*100+'vw';e.style.background=cs[i%5];e.style.animationDelay=Math.random()*.6+'s';e.style.animationDuration=(1.8+Math.random()*1.4)+'s';document.body.appendChild(e);setTimeout(()=>e.remove(),3600)}}
+function adv(m){const b=$('.track b');if(!b)return;b.style.left=at(m/TOTAL);b.classList.add('run');const e=$('.ends span:nth-child(2)');if(e)e.textContent=D(Math.min(m,TOTAL))+' / '+D(TOTAL)+' '+UL();let n=0;const iv=setInterval(()=>{const p=document.createElement('i');p.className='puff';p.style.left=b.offsetLeft+'px';b.parentNode.appendChild(p);setTimeout(()=>p.remove(),950);if(++n>6){clearInterval(iv);b.classList.remove('run')}},130)}
+function confetti(){if(matchMedia('(prefers-reduced-motion:reduce)').matches)return;const cs=['#c2412d','#1d5a43','#e8a631','#2f6bd3','#f7efda'];for(let i=0;i<46;i++){const e=document.createElement('i');e.className='conf';e.style.left=Math.random()*100+'vw';e.style.background=cs[i%5];e.style.animationDelay=Math.random()*.6+'s';e.style.animationDuration=(1.8+Math.random()*1.4)+'s';document.body.appendChild(e);setTimeout(()=>e.remove(),3600)}}
 const store=(k,v)=>{try{if(v===undefined)return localStorage.getItem(k);localStorage.setItem(k,v)}catch(e){return null}};
 const today=()=>{const d=new Date();return d.getFullYear()+"-"+(d.getMonth()+1)+"-"+d.getDate()};
 function rng(s){let h=0;for(const c of s)h=Math.imul(31,h)+c.charCodeAt(0)|0;return()=>{h|=0;h=h+0x6D2B79F5|0;let t=Math.imul(h^h>>>15,1|h);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
@@ -932,23 +1003,22 @@ function score(q,ans){
 }
 const correctText=q=>q.t==="mc"?q.o[q.a]:q.t==="multi"?q.a.map(i=>q.o[i]).join(", "):q.t==="type"?q.a[0]:q.t==="num"?String(q.a):q.a.join(" ")+(q.alt?" (also: "+q.alt.map(v=>v.join(" ")).join(" / ")+")":"");
 let S=null,timer=null,RM=null;
-const trackHTML=mi=>{const p=Math.min(100,mi/TOTAL*100);return `<div class="track" role="img" aria-label="Train journey: ${Math.min(mi,TOTAL)} of ${TOTAL} miles from London to Edinburgh"><div class="scene"></div>${ROUTE.map(([n,m])=>`<i class="stn" style="left:${m/TOTAL*100}%"></i>`).join('')}<b style="left:${p}%">🚂</b></div><div class="ends"><span>London</span><span>${Math.min(mi,TOTAL)} / ${TOTAL} miles</span><span>Edinburgh</span></div>`};
-const trainHTML=(res,all)=>`<div class='train' aria-label='Your train'><span style='font-size:1.5rem'>🚂</span>${res.map((r,i)=>`<span class='cx ${r.c}${all||i===res.length-1?' new':''}' style='animation-delay:${all?i*.15:0}s'></span>`).join('')}</div>`;
+// Distances are stored in miles; D() shows them in the chosen unit. In a multiplayer room the host's choice wins.
+const KM=1.609344;
+const unit=()=>(MP&&MP.room&&MP.room.unit)||(store('cc_unit')==='km'?'km':'mi');
+const D=mi=>Math.round(mi*(unit()==='km'?KM:1));
+const UL=()=>unit()==='km'?'km':'miles';
+const stationAt=mi=>{let s=ROUTE[0][0];for(const [n,m] of ROUTE)if(mi>=m)s=n;return s};
+const nextStation=mi=>(ROUTE.find(([n,m])=>m>mi)||[''])[0];
+// Each player's train gets its own livery, picked from their id.
+const LIVERY=['#c2412d','#1d5a43','#2f6bd3','#e8a631','#7a52c0','#16907c','#b8336a','#5b6b1f','#0f6e8c','#9a5b2b'];
+const livery=id=>{const p=MP&&MP.room&&(MP.room.players||[]).find(x=>x.id===id);if(p&&p.c!=null)return LIVERY[p.c%LIVERY.length];let h=0;for(const c of String(id||''))h=Math.imul(31,h)+c.charCodeAt(0)|0;return LIVERY[Math.abs(h)%LIVERY.length]};
+// Position along a rail (0 = London, 1 = Edinburgh), keeping the whole train inside the rail.
+const at=f=>`calc(28px + (100% - 56px) * ${Math.max(0,Math.min(1,f))})`;
+const locoSVG=(c='#c2412d')=>`<svg class="loco" viewBox="0 0 64 34" aria-hidden="true"><g class="lb"><rect x="2" y="5" width="22" height="5" rx="1.5" fill="var(--edge)"/><rect x="4" y="9" width="18" height="17" rx="2" fill="${c}"/><rect x="8" y="12" width="9" height="7" rx="1" fill="#fff6dc"/><rect x="20" y="13" width="34" height="13" rx="6" fill="${c}"/><rect x="43" y="4" width="7" height="10" rx="1" fill="var(--edge)"/><rect x="29" y="8" width="7" height="6" rx="3" fill="#e8a631"/><path d="M54 26h8l-4-7h-4z" fill="var(--edge)"/><circle cx="57" cy="16" r="2.6" fill="#ffd36b"/><circle cx="12" cy="28" r="5" fill="var(--edge)"/><circle cx="31" cy="29" r="4" fill="var(--edge)"/><circle cx="44" cy="29" r="4" fill="var(--edge)"/></g></svg>`;
+const trackHTML=(mi,c)=>{const p=Math.min(100,mi/TOTAL*100);return `<div class="track" role="img" aria-label="Train journey: ${D(Math.min(mi,TOTAL))} of ${D(TOTAL)} ${UL()} from London to Edinburgh"><div class="scene"></div>${ROUTE.map(([n,m])=>`<i class="stn" title="${n}" style="left:${at(m/TOTAL)}"></i>`).join('')}<b style="left:${at(p/100)}">${locoSVG(c)}</b></div><div class="ends"><span>London</span><span>${D(Math.min(mi,TOTAL))} / ${D(TOTAL)} ${UL()}</span><span>Edinburgh</span></div>`};
+const trainHTML=(res,all)=>`<div class='train' aria-label='Your train'>${locoSVG()}${res.map((r,i)=>`<span class='cx ${r.c}${all||i===res.length-1?' new':''}' style='animation-delay:${all?i*.15:0}s'></span>`).join('')}</div>`;
 
-function home(){
- let d=null;try{d=JSON.parse(store("cc_daily"))}catch(e){}
- if(d&&d.date===today())return result(d.res,true);
- app.innerHTML=`<h1>Clickety-Clack</h1><p class="mute">The daily English train quiz for beginners (A1–B1)</p>
- <div class="card"><h2>How to play</h2><ul>
- <li>Every day a new train leaves London with <b>7 questions</b>. Everybody gets the same questions on the same day. You can play the daily train <b>once</b>. The questions get harder: 2 at A1, 3 at A2 and 2 at B1.</li>
- <li>Every answer gives you <b>miles</b>: up to 45 for an A1 question, 60 for A2 and 75 for B1. London to Edinburgh is ${TOTAL} miles.</li><li><b>Bonus miles:</b> answer fast and get up to +8 <b>speed</b> miles. From your third good answer in a row, you earn +8 <b>streak</b> miles each time.</li>
- <li>A weak answer makes the train <b>late</b>: up to ${MAXDELAY} minutes per question.</li>
- <li>A good answer adds a <b>carriage</b>: green is a passenger carriage (very good), yellow is a freight carriage (OK).</li>
- <li>You have 20–35 seconds for each question.</li></ul>
- <h2>Kinds of questions</h2><ul><li><b>Pick one</b> answer from four.</li><li><b>Pick all</b> the correct answers. A wrong choice takes points away.</li><li><b>Type</b> the answer. Small spelling mistakes are OK.</li><li><b>Number</b>: the closer you are, the more miles you get.</li><li><b>Put in order</b>: tap the words in the right order.</li></ul></div>
- <div class="row"><button class="main" id="go">Start today’s train</button><button id="pr">Practice (random questions)</button></div>`;
- $('#go').onclick=()=>{SFX.whistle();start(false)};$('#pr').onclick=()=>{SFX.whistle();start(true)};
-}
 function start(practice,th,seed,cls,sub,mp){
  const r=rng(seed||(practice?String(Math.random()):dailySeed()));
  S={qs:pickQs(th,r,sub),i:0,res:[],practice,r,cls,th,sub,mp};show();
@@ -963,7 +1033,7 @@ function show(){
   if(q.t==="num")return `<input id="ti" type="number" inputmode="decimal" aria-label="Your number">`;
   return `<div class="slot" id="seq" aria-label="Your answer"></div><div class="row" id="pool"></div>`;
  };
- app.innerHTML=`<div class="mute"><span class="lv">${q.lv}</span>Question ${S.i+1} of ${S.qs.length} · ${TN[q.th]}${q.sub?` / ${SUBLABEL[q.sub]||q.sub}`:""} · ${LABEL[q.t]}${S.cls?' · class '+S.cls.code:S.mp?' · multiplayer':S.practice?' · practice':''}</div>
+ app.innerHTML=`<div class="mute qmeta"><span class="lv">${q.lv}</span>Question ${S.i+1} of ${S.qs.length} · ${TN[q.th]}${q.sub?` / ${SUBLABEL[q.sub]||q.sub}`:""} · ${LABEL[q.t]}${S.cls?' · class '+S.cls.code:S.mp?' · multiplayer':S.practice?' · practice':''}</div>
  <div class="bar"><i id="tb"></i></div>${S.mp&&MP?'<div id="mb" class="mb"></div>':''}${trackHTML(mi)}
  <div class="card ticket"><h2>${q.q}${TTS?' <button class="chip lis" id="ls" aria-label="Listen to the question">🔊</button>':''}</h2>${body()}<div id="fb"></div><div class="row"><button class="main" id="ok">Answer</button></div></div>`;
  const getAns=()=>q.t==="multi"?pick:q.t==="mc"?pick:q.t==="order"?seq.map(i=>q.a[i]):($("#ti")||{}).value;
@@ -990,7 +1060,7 @@ function show(){
   if(q.t==="mc"||q.t==="multi")app.querySelectorAll(".opts button").forEach(b=>{const i=+b.dataset.i,right=q.t==="mc"?i===q.a:q.a.includes(i),chosen=q.t==="mc"?pick===i:pick.includes(i);b.classList.remove("on");if(right)b.classList.add("ok");else if(chosen)b.classList.add("no");b.disabled=true});
   if(ti)ti.disabled=true;
   const fs=fullSentence(q),tp=c!=="good"?tip(q.sub):"",last=S.i===S.qs.length-1,msg=c==="good"?"Great!":c==="mid"?"Not bad.":"Not this time.";
-  $("#fb").innerHTML=`<div class="fb ${c}"><b>${msg}</b> +${mi2} miles${spd||stk?` (${[spd&&'speed +'+spd,stk&&'streak +'+stk].filter(Boolean).join(', ')})`:''} · ${delay} min late<br><span class="mute">Correct answer: ${correctText(q)}</span>${fs?`<br><span class="fs">✔ ${esc(fs)}</span>${TTS?` <button class="chip lis" data-say="${esc(fs)}" aria-label="Listen to the sentence">🔊</button>`:""}`:""}</div>${tp?`<div class="tip">💡 ${esc(tp)}</div>`:""}`;
+  $("#fb").innerHTML=`<div class="fb ${c}"><b>${msg}</b> +${D(mi2)} ${UL()}${spd||stk?` (${[spd&&'speed +'+D(spd),stk&&'streak +'+D(stk)].filter(Boolean).join(', ')})`:''} · ${delay} min late<br><span class="mute">Correct answer: ${correctText(q)}</span>${fs?`<br><span class="fs">✔ ${esc(fs)}</span>${TTS?` <button class="chip lis" data-say="${esc(fs)}" aria-label="Listen to the sentence">🔊</button>`:""}`:""}</div>${tp?`<div class="tip">💡 ${esc(tp)}</div>`:""}`;
   $('#fb').insertAdjacentHTML('beforeend',trainHTML(S.res));app.querySelectorAll('[data-say]').forEach(b=>b.onclick=()=>speak(b.dataset.say));const cd=$('.card');if(c==='none'){cd.classList.add('shake');SFX.bad()}else{cd.classList.add('pop');c==='good'?SFX.good():SFX.mid()}adv(mi+mi2);SFX.clack(2);
   const b=$("#ok");b.textContent=last?"See your journey":"Next question";b.disabled=false;
   b.onclick=()=>{if(last)finish();else{S.i++;show()}};b.focus();
@@ -1100,48 +1170,48 @@ function reportHTML(res,st,m,name){
  const nm=k=>SUBLABEL[k]||k,strong=st.sl.filter(x=>x.p>=.8).map(x=>nm(x.k)),weak=st.sl.filter(x=>x.p<.6).map(x=>nm(x.k));
  const study=st.sl.filter(x=>x.p<.6).slice(0,2).map(x=>`<div class="study"><b>${esc(nm(x.k))}</b><p>${esc(tip(x.k))}</p><button data-study="${x.k}">Learn &amp; practise →</button></div>`).join('');
  const lvRows=['A1','A2','B1'].map(l=>{const b=st.by[l];if(!b)return '';const p=Math.round(100*b.s/b.n);return `<tr><td><span class="lv">${l}</span></td><td>${b.n} q</td><td>${p}%</td><td><span class="pb"><i style="width:${p}%"></i></span></td></tr>`}).join('');
- const rows=res.some(r=>r.q)?`<ol class="qlist">${res.map(r=>`<li class="q-${r.c}"><div class="qh"><span class="lv">${r.lv||''}</span><span>${esc(r.q||'')}</span></div><div class="qa">Your answer: <b>${esc(r.ya||'—')}</b></div>${r.c==='good'?'':`<div class="qa">Correct answer: <b>${esc(r.ca||'')}</b></div>`}<div class="mute">${r.sub?esc(nm(r.sub))+' · ':''}+${r.mi} miles${r.spd||r.stk?' (bonus '+((r.spd||0)+(r.stk||0))+')':''} · ${r.delay} min late · ${r.tm||0} s</div></li>`).join('')}</ol>`:'<p class="mute">Question details are not available for this saved result.</p>';
+ const rows=res.some(r=>r.q)?`<ol class="qlist">${res.map(r=>`<li class="q-${r.c}"><div class="qh"><span class="lv">${r.lv||''}</span><span>${esc(r.q||'')}</span></div><div class="qa">Your answer: <b>${esc(r.ya||'—')}</b></div>${r.c==='good'?'':`<div class="qa">Correct answer: <b>${esc(r.ca||'')}</b></div>`}<div class="mute">${r.sub?esc(nm(r.sub))+' · ':''}+${D(r.mi)} ${UL()}${r.spd||r.stk?' (bonus '+D((r.spd||0)+(r.stk||0))+')':''} · ${r.delay} min late · ${r.tm||0} s</div></li>`).join('')}</ol>`:'<p class="mute">Question details are not available for this saved result.</p>';
  const msg=st.arrived?'Excellent English! Every carriage counts.':st.mi>=250?'Very good journey. Try again tomorrow!':st.mi>=120?'Good start. Practise a little more and go further.':'Every journey starts at the first station. Try practice mode!';
  return `<section class="card report" id="rep"><div class="section-kicker">Journey report</div><h2>Report for <span id="rn">${esc(name||'Player')}</span></h2>
  <label for="pn">Player name</label><input id="pn" maxlength="24" value="${esc(name)}" placeholder="Type your name">
  <p class="mute rep-meta">${[m.mode,m.topic,m.date].filter(Boolean).map(esc).join(' · ')}</p>
- <div class="kpis"><div class="kpi"><b>${st.mi}</b><span>of ${TOTAL} miles</span></div><div class="kpi"><b>${st.acc}%</b><span>accuracy</span></div><div class="kpi"><b>${st.late}</b><span>min late</span></div><div class="kpi"><b>${st.good}/${st.n}</b><span>good answers</span></div></div>
- <p><b>${st.arrived?'Arrived in Edinburgh.':'Last station: '+esc(st.st)+'.'}</b> Bonus miles: speed +${st.spd}, streak +${st.stk}. Total answer time: ${st.secs} s. Carriages: ${st.good} passenger, ${st.mid} freight.</p><p>${msg}</p>
+ <div class="kpis"><div class="kpi"><b>${D(st.mi)}</b><span>of ${D(TOTAL)} ${UL()}</span></div><div class="kpi"><b>${st.acc}%</b><span>accuracy</span></div><div class="kpi"><b>${st.late}</b><span>min late</span></div><div class="kpi"><b>${st.good}/${st.n}</b><span>good answers</span></div></div>
+ <p><b>${st.arrived?'Arrived in Edinburgh.':'Last station: '+esc(st.st)+'.'}</b> Bonus ${UL()}: speed +${D(st.spd)}, streak +${D(st.stk)}. Total answer time: ${st.secs} s. Carriages: ${st.good} passenger, ${st.mid} freight.</p><p>${msg}</p>
  ${lvRows?`<h3>Accuracy by level</h3><table class="rt">${lvRows}</table>`:''}
  ${st.sl.length?`<h3>Topics</h3><p><b>Strong:</b> ${strong.length?strong.map(esc).join(', '):'—'}<br><b>Practise more:</b> ${weak.length?weak.map(esc).join(', '):'— nothing, great job!'}</p>${study}`:''}
  <h3>Your answers</h3>${rows}</section>`;
 }
 async function makeImage(res,m){
  const st=stats(res),W=1080,H=1560,c=document.createElement('canvas');c.width=W;c.height=H;const g=c.getContext('2d');
- try{await document.fonts.load('800 80px "Barlow Condensed"');await document.fonts.load('600 30px "Barlow"')}catch(e){}
- const HF='"Barlow Condensed","Arial Narrow",sans-serif',BF='"Barlow","Trebuchet MS",sans-serif',NAVY='#14365c',YEL='#ffd23f',MU='#5a7088';
+ try{await document.fonts.load('900 80px "Big Shoulders Display"');await document.fonts.load('600 30px "Overpass"')}catch(e){}
+ const HF='"Big Shoulders Display","Arial Narrow",sans-serif',BF='"Overpass","Trebuchet MS",sans-serif',NAVY='#15261f',YEL='#e8a631',MU='#5d6a60';
  const rr=(x,y,w,h,r)=>{g.beginPath();g.moveTo(x+r,y);g.arcTo(x+w,y,x+w,y+h,r);g.arcTo(x+w,y+h,x,y+h,r);g.arcTo(x,y+h,x,y,r);g.arcTo(x,y,x+w,y,r);g.closePath()};
  const fit=(t,f,mw)=>{g.font=f;if(g.measureText(t).width<=mw)return t;while(t.length>1&&g.measureText(t+'…').width>mw)t=t.slice(0,-1);return t+'…'};
  const T=(t,x,y,f,col,al)=>{g.font=f;g.fillStyle=col;g.textAlign=al||'left';g.fillText(t,x,y)};
- const gr=g.createLinearGradient(0,0,0,H);gr.addColorStop(0,'#bfe0f5');gr.addColorStop(1,'#e9f2f8');g.fillStyle=gr;g.fillRect(0,0,W,H);
+ const gr=g.createLinearGradient(0,0,0,H);gr.addColorStop(0,'#cfe3dc');gr.addColorStop(1,'#f1e8d4');g.fillStyle=gr;g.fillRect(0,0,W,H);
  g.fillStyle=YEL;g.beginPath();g.arc(930,110,46,0,7);g.fill();
- g.fillStyle='#94c9a4';g.beginPath();g.ellipse(180,300,520,150,0,0,7);g.fill();
- g.fillStyle='#6fb08c';g.beginPath();g.ellipse(860,310,480,130,0,0,7);g.fill();
- T('Clickety-Clack',60,150,'800 108px '+HF,NAVY);T('Daily English train quiz · A1–B1',64,205,'600 32px '+BF,'#3b5878');
+ g.fillStyle='#9cc3a0';g.beginPath();g.ellipse(180,300,520,150,0,0,7);g.fill();
+ g.fillStyle='#6fa281';g.beginPath();g.ellipse(860,310,480,130,0,0,7);g.fill();
+ T('Clickety-Clack',60,150,'800 108px '+HF,NAVY);T('Daily English train quiz · A1–B1',64,205,'600 32px '+BF,'#1d5a43');
  g.fillStyle=NAVY;rr(40,290,988,1200,34);g.fill();g.fillStyle='#fff';rr(40,280,988,1200,34);g.fill();g.lineWidth=5;g.strokeStyle=NAVY;g.stroke();
  T(fit(m.name||'Player','800 84px '+HF,900),80,385,'800 84px '+HF,NAVY);
  T(fit([m.mode,m.topic,m.date].filter(Boolean).join(' · '),'600 28px '+BF,900),82,430,'600 28px '+BF,MU);
- T(String(st.mi),80,640,'800 220px '+HF,NAVY);g.font='800 220px '+HF;const mw=g.measureText(String(st.mi)).width;
- T('/ '+TOTAL+' miles',80+mw+20,640,'700 52px '+BF,MU);
- T(st.arrived?'Arrived in Edinburgh!':'Reached '+st.st,80,710,'700 46px '+BF,st.arrived?'#1f9d57':NAVY);
- const x0=90,x1=990,ty=800;g.lineCap='round';g.lineWidth=10;g.strokeStyle='#c6d6e4';g.beginPath();g.moveTo(x0,ty);g.lineTo(x1,ty);g.stroke();
- const px=x0+(x1-x0)*Math.min(1,st.mi/TOTAL);g.strokeStyle='#1f9d57';g.beginPath();g.moveTo(x0,ty);g.lineTo(px,ty);g.stroke();
+ T(String(D(st.mi)),80,640,'800 220px '+HF,NAVY);g.font='800 220px '+HF;const mw=g.measureText(String(D(st.mi))).width;
+ T('/ '+D(TOTAL)+' '+UL(),80+mw+20,640,'700 52px '+BF,MU);
+ T(st.arrived?'Arrived in Edinburgh!':'Reached '+st.st,80,710,'700 46px '+BF,st.arrived?'#2b8a55':NAVY);
+ const x0=90,x1=990,ty=800;g.lineCap='round';g.lineWidth=10;g.strokeStyle='#d8caa9';g.beginPath();g.moveTo(x0,ty);g.lineTo(x1,ty);g.stroke();
+ const px=x0+(x1-x0)*Math.min(1,st.mi/TOTAL);g.strokeStyle='#2b8a55';g.beginPath();g.moveTo(x0,ty);g.lineTo(px,ty);g.stroke();
  ROUTE.forEach(([n,mm])=>{const sx=x0+(x1-x0)*mm/TOTAL;g.fillStyle='#fff';g.strokeStyle=NAVY;g.lineWidth=5;g.beginPath();g.arc(sx,ty,11,0,7);g.fill();g.stroke()});
  g.fillStyle=YEL;g.strokeStyle=NAVY;g.lineWidth=6;g.beginPath();g.arc(px,ty,22,0,7);g.fill();g.stroke();
  T('London',x0,850,'600 26px '+BF,MU);T('Edinburgh',x1,850,'600 26px '+BF,MU,'right');
  let tx=80;const tY=900;g.fillStyle=NAVY;rr(tx,tY,86,56,10);g.fill();g.fillRect(tx+60,tY-22,16,24);g.fillStyle='#fff';g.fillRect(tx+14,tY+10,22,18);tx+=100;
- res.forEach(r=>{g.fillStyle=r.c==='good'?'#1f9d57':r.c==='mid'?'#e5a100':'#fff';rr(tx,tY+4,88,48,8);g.fill();g.lineWidth=4;g.setLineDash(r.c==='none'?[8,6]:[]);g.strokeStyle=NAVY;g.stroke();g.setLineDash([]);tx+=96});
- [[st.acc+'%','Accuracy'],[st.good+' / '+st.n,'Good answers'],[st.late+' min','Delay']].forEach(([v,l],i)=>{const x=80+i*315;g.fillStyle='#f4f8fb';rr(x,990,290,150,22);g.fill();g.lineWidth=4;g.strokeStyle=NAVY;g.stroke();T(v,x+145,1075,'800 70px '+HF,NAVY,'center');T(l,x+145,1115,'600 26px '+BF,MU,'center')});
+ res.forEach(r=>{g.fillStyle=r.c==='good'?'#2b8a55':r.c==='mid'?'#c98510':'#fff';rr(tx,tY+4,88,48,8);g.fill();g.lineWidth=4;g.setLineDash(r.c==='none'?[8,6]:[]);g.strokeStyle=NAVY;g.stroke();g.setLineDash([]);tx+=96});
+ [[st.acc+'%','Accuracy'],[st.good+' / '+st.n,'Good answers'],[st.late+' min','Delay']].forEach(([v,l],i)=>{const x=80+i*315;g.fillStyle='#fffaee';rr(x,990,290,150,22);g.fill();g.lineWidth=4;g.strokeStyle=NAVY;g.stroke();T(v,x+145,1075,'800 70px '+HF,NAVY,'center');T(l,x+145,1115,'600 26px '+BF,MU,'center')});
  let ly=1195;T('Accuracy by level',80,ly,'700 30px '+BF,NAVY);ly+=18;
- ['A1','A2','B1'].forEach(l=>{const b=st.by[l],p=b?b.s/b.n:0;T(l,80,ly+34,'700 28px '+BF,NAVY);g.fillStyle='#c6d6e4';rr(150,ly+12,700,26,13);g.fill();if(b){g.fillStyle='#1f9d57';rr(150,ly+12,Math.max(26,700*p),26,13);g.fill()}T(b?Math.round(p*100)+'%':'–',880,ly+34,'700 28px '+BF,NAVY);ly+=46});
+ ['A1','A2','B1'].forEach(l=>{const b=st.by[l],p=b?b.s/b.n:0;T(l,80,ly+34,'700 28px '+BF,NAVY);g.fillStyle='#d8caa9';rr(150,ly+12,700,26,13);g.fill();if(b){g.fillStyle='#2b8a55';rr(150,ly+12,Math.max(26,700*p),26,13);g.fill()}T(b?Math.round(p*100)+'%':'–',880,ly+34,'700 28px '+BF,NAVY);ly+=46});
  const nm=k=>SUBLABEL[k]||k,strong=st.sl.filter(x=>x.p>=.8).map(x=>nm(x.k)).slice(0,3).join(', '),weak=st.sl.filter(x=>x.p<.6).map(x=>nm(x.k)).slice(0,3).join(', ');
  T(fit('Strong: '+(strong||'keep going!'),'600 28px '+BF,900),80,1395,'600 28px '+BF,'#1f7a49');
- T(fit('Practise: '+(weak||'nothing, great job!'),'600 28px '+BF,900),80,1440,'600 28px '+BF,'#b3261e');
+ T(fit('Practise: '+(weak||'nothing, great job!'),'600 28px '+BF,900),80,1440,'600 28px '+BF,'#c2412d');
  T('Clickety-Clack · London → Edinburgh',W/2,1535,'700 30px '+BF,NAVY,'center');
  return c;
 }
@@ -1154,8 +1224,8 @@ function result(res,again,practice){
  const st=stats(res),mi=st.mi,m=RM,name=m.name||store('cc_name')||'';
  const head=st.arrived?'You arrived in Edinburgh!':'Your train stopped near '+st.st+'.';
  const sq=res.map(r=>r.c==='good'?'🟩':r.c==='mid'?'🟨':'⬛').join('');
- const txt=`Clickety-Clack 🚂 ${name?name+' · ':''}${practice?'practice':today()}\n${sq}\n${mi}/${TOTAL} miles · ${st.late} min late · ${st.acc}% accuracy`;
- app.innerHTML=`<h1>${head}</h1><p class="mute">${mi} of ${TOTAL} miles · ${st.late} minutes late${again?' · you have played today’s train':''}</p>
+ const txt=`Clickety-Clack 🚂 ${name?name+' · ':''}${practice?'practice':today()}\n${sq}\n${D(mi)}/${D(TOTAL)} ${UL()} · ${st.late} min late · ${st.acc}% accuracy`;
+ app.innerHTML=`<h1>${head}</h1><p class="mute">${D(mi)} of ${D(TOTAL)} ${UL()} · ${st.late} minutes late${again?' · you have played today’s train':''}</p>
  ${trackHTML(0)}${trainHTML(res,1)}
  <div class="row" style="margin:14px 0 8px"><button class="main" id="mk">📷 Create image</button><button id="sh">Copy my result</button><button id="mn">Menu</button><button id="pr">Practice</button></div><p class="mute" id="msg" role="status"></p><div id="imgbox"></div>
  ${reportHTML(res,st,m,name)}
@@ -1203,7 +1273,7 @@ function mpMsg(m){
  if(m.t==='start'&&m.mode==='live'){if(!MP||!MP.room||MP.round===m.round)return;MP.round=m.round;MP.seed=m.seed;LIVE={};Object.assign(MP.room,{state:'playing',round:m.round,n:m.n});liveHold('Get ready! The first question is coming…');if(MP.host)liveSend(0);return}
  if(m.t==='lq'){if(MP)liveQuestion(m);return}
  if(m.t==='lack'){if(LIVE.cur&&LIVE.cur.i===m.i&&LIVE.mine===undefined){LIVE.mine=null;liveDraw()}return}
- if(m.t==='lcount'){if(LIVE.cur&&LIVE.cur.i===m.i){LIVE.cur.count=m.count;LIVE.cur.of=m.of;const e=$('#lc');if(e)e.textContent=m.count+' / '+m.of+' answered'}return}
+ if(m.t==='lcount'){if(LIVE.cur&&LIVE.cur.i===m.i){Object.assign(LIVE.cur,{count:m.count,of:m.of,who:m.who});const e=$('#lc');if(e)e.textContent=m.count+' / '+m.of+' answered';liveBoarding()}return}
  if(m.t==='lreveal'){if(MP)liveReveal(m);return}
  if(m.t==='lfinal'){if(MP)livePodium(m);return}
  if(m.t==='start'){if(!MP||!MP.room||MP.round===m.round)return;Object.assign(MP.room,{state:'playing',round:m.round,seed:m.seed,theme:m.theme,sub:m.sub});MP.spec?mpHostBoard():mpBegin(MP.room);return}
@@ -1213,12 +1283,12 @@ function mpMsg(m){
 }
 function mpBegin(room){MP.round=room.round;clearInterval(timer);start(true,room.theme,room.seed,undefined,room.sub,true);mpSend({t:'progress',i:0,mi:0,late:0,sq:''})}
 function boardRows(r,max){
- return r.players.slice(0,max).map((p,i)=>`<div class="brow${p.id===MP.id?' me':''}${p.online?'':' off'}"><span class="rk">${i+1}</span><span class="nm">${esc(p.name)}${p.id===MP.id?' (you)':''}</span><span class="pbar"><i style="width:${Math.round(100*p.mi/TOTAL)}%"></i></span><span class="mi">${p.mi} mi</span><span class="sq">${(p.sq||'').split('').map(c=>SQE[c]||'').join('')}${p.done?' ✓':''}</span></div>`).join('')||'<p class="mute">No players yet.</p>';
+ return r.players.slice(0,max).map((p,i)=>`<div class="brow${p.id===MP.id?' me':''}${p.online?'':' off'}"><span class="rk">${i+1}</span><span class="nm">${esc(p.name)}${p.id===MP.id?' (you)':''}</span><span class="pbar"><i style="width:${Math.round(100*p.mi/TOTAL)}%"></i></span><span class="mi">${D(p.mi)} ${unit()}</span><span class="sq">${(p.sq||'').split('').map(c=>SQE[c]||'').join('')}${p.done?' ✓':''}</span></div>`).join('')||'<p class="mute">No players yet.</p>';
 }
 function mpRefresh(){
  const r=MP&&MP.room;if(!r)return;
  if($('#pl')){$('#pc').textContent='('+r.players.length+')';
-  $('#pl').innerHTML=r.players.map(p=>`<li class="${p.online?'':'off'}">${p.host?'👑 ':''}${esc(p.name)}${p.id===MP.id?' (you)':''}${MP.host&&p.id!==MP.id?` <button class="chip lis" data-kick="${p.id}" aria-label="Remove ${esc(p.name)}">✕</button>`:''}</li>`).join('')||'<li class="mute">Nobody yet…</li>';
+  $('#pl').innerHTML=r.players.map(p=>`<li class="${p.online?'':'off'}">${locoSVG(livery(p.id))}${p.host?'👑 ':''}${esc(p.name)}${p.id===MP.id?' (you)':''}${MP.host&&p.id!==MP.id?` <button class="chip lis" data-kick="${p.id}" aria-label="Remove ${esc(p.name)}">✕</button>`:''}</li>`).join('')||'<li class="mute">Nobody yet…</li>';
   app.querySelectorAll('[data-kick]').forEach(b=>b.onclick=()=>mpSend({t:'kick',id:b.dataset.kick}))}
  if($('#st')&&r.mode==='live')$('#st').disabled=!r.players.length;
  if($('#mb'))$('#mb').innerHTML=boardRows(r,5);
@@ -1228,11 +1298,11 @@ function mpRefresh(){
 function mpTopic(r){return (r.sub?SUBLABEL[r.sub]:(r.theme==='M'?'Mixed topics':TN[r.theme]))+(r.mode==='live'?' · ⚡ live quiz, '+r.n+' questions':'')}
 function mpHostScreen(){
  const opts='<option value="M">🎲 Mixed topics</option>'+GROUPS.map(g=>`<optgroup label="${g.name}"><option value="${g.k}">All ${g.name.toLowerCase()}</option>${g.subs.filter(s=>s[0]!=='#').map(s=>`<option value="${s}">${SUBLABEL[s]}</option>`).join('')}</optgroup>`).join('');
- app.innerHTML=`<div class="section-kicker">🎮 Multiplayer</div><h1>Host a game</h1><div class="card"><label for="mm">Game type</label><select id="mm"><option value="live">⚡ Live quiz: one question at a time on your screen</option><option value="race">🚂 Train race: everyone plays at their own speed</option></select><p class="mute" id="mmd"></p><label for="mt" style="display:block;margin-top:12px">Topic</label><select id="mt">${opts}</select><div id="mqw"><label for="mq" style="display:block;margin-top:12px">Number of questions</label><select id="mq"><option>5</option><option selected>10</option><option>15</option><option>20</option></select></div><label for="mn2" style="display:block;margin-top:12px">Your name</label><input id="mn2" maxlength="24" value="${esc(store('cc_name')||'')}" placeholder="Teacher or player name"><label id="mplw" style="display:flex;gap:8px;align-items:center;margin-top:12px"><input type="checkbox" id="mpl" checked style="width:auto;min-height:0"> I want to play too</label><p class="mute" id="merr" role="alert"></p><div class="row"><button class="main" id="mgo">Create room →</button><button id="mbk">Back</button></div></div>`;
- const md=()=>{const live=$('#mm').value==='live';$('#mqw').hidden=!live;$('#mplw').style.display=live?'none':'flex';$('#mmd').textContent=live?'Show your screen to the class. Everybody answers the same question at the same time on their phone. Fast correct answers get more points.':'Everybody gets the same 7 questions and drives their train at their own speed. The leaderboard updates live.'};
+ app.innerHTML=`<div class="section-kicker">🎮 Multiplayer</div><h1>Host a game</h1><div class="card"><label for="mm">Game type</label><select id="mm"><option value="live">⚡ Live quiz: one question at a time on your screen</option><option value="race">🚂 Train race: everyone plays at their own speed</option></select><p class="mute" id="mmd"></p><label for="mt" style="display:block;margin-top:12px">Topic</label><select id="mt">${opts}</select><div id="mqw"><label for="mq" style="display:block;margin-top:12px">Number of questions</label><select id="mq"><option>5</option><option selected>10</option><option>15</option><option>20</option></select></div><label for="mu" style="display:block;margin-top:12px">Distance</label><select id="mu"><option value="mi"${unit()==='mi'?' selected':''}>Miles (London to Edinburgh: ${TOTAL} miles)</option><option value="km"${unit()==='km'?' selected':''}>Kilometres (London to Edinburgh: ${Math.round(TOTAL*KM)} km)</option></select><label for="mn2" style="display:block;margin-top:12px">Your name</label><input id="mn2" maxlength="24" value="${esc(store('cc_name')||'')}" placeholder="Teacher or player name"><label id="mplw" style="display:flex;gap:8px;align-items:center;margin-top:12px"><input type="checkbox" id="mpl" checked style="width:auto;min-height:0"> I want to play too</label><p class="mute" id="merr" role="alert"></p><div class="row"><button class="main" id="mgo">Create room →</button><button id="mbk">Back</button></div></div>`;
+ const md=()=>{const live=$('#mm').value==='live';$('#mqw').hidden=!live;$('#mplw').style.display=live?'none':'flex';$('#mmd').textContent=live?'Show your screen to the class. Everybody answers the same question at the same time on their phone. Every player drives their own train: fast correct answers take it further towards Edinburgh.':'Everybody gets the same 7 questions and drives their train at their own speed. The leaderboard updates live.'};
  $('#mm').onchange=md;md();
  $('#mbk').onclick=menu;
- $('#mgo').onclick=()=>{const v=$('#mt').value,n=$('#mn2').value.trim(),sub=v.includes('-')?v:null,theme=sub?sub[0].toUpperCase():v;store('cc_name',n);$('#merr').textContent='Connecting…';mpOpen({t:'create',name:n,theme,sub,mode:$('#mm').value,n:+$('#mq').value,play:$('#mpl').checked})};
+ $('#mgo').onclick=()=>{const v=$('#mt').value,n=$('#mn2').value.trim(),sub=v.includes('-')?v:null,theme=sub?sub[0].toUpperCase():v;store('cc_name',n);$('#merr').textContent='Connecting…';mpOpen({t:'create',name:n,theme,sub,mode:$('#mm').value,n:+$('#mq').value,unit:$('#mu').value,play:$('#mpl').checked})};
 }
 function mpJoinScreen(code){
  app.innerHTML=`<div class="section-kicker">🎮 Multiplayer</div><h1>Join a game</h1><div class="card"><label for="jc">Room code</label><input id="jc" maxlength="4" autocapitalize="characters" autocomplete="off" value="${esc(code||'')}" style="text-transform:uppercase;letter-spacing:.3em;font-size:1.6rem;text-align:center"><label for="jn" style="display:block;margin-top:12px">Your name</label><input id="jn" maxlength="24" autocomplete="nickname" value="${esc(store('cc_name')||'')}"><p class="mute" id="merr" role="alert"></p><div class="row"><button class="main" id="jgo">Join →</button><button id="jbk">Back</button></div></div>`;
@@ -1242,7 +1312,7 @@ function mpJoinScreen(code){
 }
 function mpLobby(){
  const r=MP.room,link=location.origin+location.pathname+'#room-'+r.code;
- app.innerHTML=`<div class="section-kicker">🎮 Room</div><h1>Code <span class="code">${esc(r.code)}</span></h1><p class="mute">Topic: ${esc(mpTopic(r))} · host: ${esc(r.hostName)}</p>
+ app.innerHTML=`<div class="section-kicker">🎮 Room</div><h1>Code <span class="code" aria-label="${esc(r.code)}">${[...r.code].map(c=>`<i>${esc(c)}</i>`).join('')}</span></h1><p class="mute">Topic: ${esc(mpTopic(r))} · host: ${esc(r.hostName)}</p>
  <div class="card"><div class="lobby"><img src="/qr.svg?u=${encodeURIComponent(link)}" alt="QR code to join this room" width="180" height="180"><div><p><b>Scan the QR code</b>, or open the link and type the code.</p><p class="mute" style="word-break:break-all">${esc(link)}</p><button id="cp">Copy link</button></div></div></div>
  <div class="card"><h2>Players <span id="pc"></span></h2><ul class="plist" id="pl"></ul></div>
  <div class="row">${MP.host?'<button class="main" id="st">Start the game →</button>':`<p class="mute">${r.mode==='live'?'You’re in! Look for your name on the host’s screen.':'Waiting for the host to start…'}</p>`}<button id="lv">Leave</button></div>`;
@@ -1267,12 +1337,13 @@ function mpHostDraw(){
  $('#hb').innerHTML=`<p class="mute">Topic: ${esc(mpTopic(r))} · ${done} of ${r.players.length} finished${r.state==='done'?' · game over':''}</p>${boardRows(r,100)}<div class="row" style="margin-top:12px"><button class="main" id="ag">Play again</button><button id="en">End game</button><button id="lv2">Leave</button></div>`;
  $('#ag').onclick=()=>mpSend({t:'again'});$('#en').onclick=()=>mpSend({t:'end'});$('#lv2').onclick=mpLeave;
 }
-// Live quiz (Kahoot-style): the host's screen shows each question, players answer on their own devices,
-// and the server keeps the time and the score. Text from the server is always escaped.
-const LCOL=[['#d63048','▲'],['#1b64c8','◆'],['#a87400','●'],['#23874a','■'],['#7b4cc0','★'],['#0b8a8a','✚']];
+// Live quiz: the host's screen shows each question, players answer on their own devices and every player
+// drives their own train. The server keeps the time and the score; a perfect game (1000 per question)
+// reaches Edinburgh. Text from the server is always escaped.
 let LIVE={};
 const ord=n=>n+(n%100>10&&n%100<14?'th':['th','st','nd','rd'][n%10]||'th');
-const fmt=n=>Number(n||0).toLocaleString('en-GB');
+const liveMi=(score,n)=>Math.min(TOTAL,score/(1000*Math.max(1,n))*TOTAL);
+const where=mi=>mi>=TOTAL?'Arrived in Edinburgh':mi<1?'Waiting in London':'Near '+stationAt(mi);
 function liveList(){
  const r=MP.room,seed=MP.seed;if(LIVE.list&&LIVE.seed===seed)return LIVE.list;
  const rr=rng(seed),o={A1:0,A2:1,B1:2},pool=Q.filter(q=>r.sub?q.sub===r.sub:(r.theme==='M'||q.th===r.theme));
@@ -1280,9 +1351,11 @@ function liveList(){
  return LIVE.list;
 }
 function liveSend(i){if(!MP.seed)return;const L=liveList(),q=L[i];if(q)mpSend({t:'lq',i,n:L.length,time:TIME[q.t],q:{t:q.t,lv:q.lv,sub:q.sub,q:q.q,o:q.o,a:q.a,alt:q.alt,s:q.s}})}
-function liveHold(msg){clearInterval(timer);app.innerHTML=`<div class="section-kicker">⚡ Live quiz · room ${esc(MP.code||'')}</div><div class="card lwait"><b>${esc(msg)}</b><p class="mute">${MP.spec?'Show this screen to everybody.':'Keep this page open.'}</p></div>`}
+function liveHold(msg){clearInterval(timer);app.innerHTML=`<div class="section-kicker">⚡ Live quiz · room ${esc(MP.code||'')}</div><div class="card lwait">${locoSVG(MP.spec?'#c2412d':livery(MP.id))}<b>${esc(msg)}</b><p class="mute">${MP.spec?'Show this screen to everybody.':'Keep this page open.'}</p></div>`}
 function liveCtl(){return MP.host?`<div class="row"><button id="lsk">Skip ⏭</button><button id="len">End game</button></div>`:''}
-function liveBindCtl(){if($('#lsk'))$('#lsk').onclick=()=>mpSend({t:'skip'});if($('#len'))$('#len').onclick=()=>{if(confirm('End the game now and show the podium?'))mpSend({t:'end'})}}
+function liveBindCtl(){if($('#lsk'))$('#lsk').onclick=()=>mpSend({t:'skip'});if($('#len'))$('#len').onclick=()=>{if(confirm('End the game now and show the arrivals board?'))mpSend({t:'end'})}}
+const plat=i=>`<span class="plat" aria-hidden="true"><small>Platform</small><b>${i+1}</b></span>`;
+function liveBoarding(){const e=$('#bd'),m=LIVE.cur;if(!e||!m)return;const who=m.who||[];e.innerHTML=(MP.room.players||[]).map(p=>`<li class="${who.includes(p.id)?'on':''}">${esc(p.name)}</li>`).join('')||'<li>Nobody yet</li>'}
 function liveQuestion(m){
  clearInterval(timer);const now=performance.now();
  LIVE.cur=m;LIVE.go=now+m.wait;LIVE.end=now+m.left;LIVE.open=m.wait<=0;LIVE.mine=m.answered?null:undefined;LIVE.timeup=false;LIVE.pick=[];LIVE.seq=[];
@@ -1291,32 +1364,38 @@ function liveQuestion(m){
  timer=setInterval(()=>{
   const t=performance.now();
   if(!LIVE.open&&t>=LIVE.go){LIVE.open=true;liveDraw()}
-  const left=Math.max(0,LIVE.end-t)/1000,el=$('#lt'),tb=$('#tb');
-  if(el)el.textContent=LIVE.open?Math.ceil(left):Math.max(1,Math.ceil((LIVE.go-t)/1000));
-  if(tb)tb.style.width=(LIVE.open?Math.min(100,left/m.time*100):100)+'%';
+  liveClock(t);
+  const left=Math.max(0,LIVE.end-t)/1000;
   if(LIVE.open&&left<=5&&left>0&&Math.ceil(left)!==lt){lt=Math.ceil(left);SFX.tick()}
   if(LIVE.open&&left<=0&&!MP.spec&&LIVE.mine===undefined&&!LIVE.timeup){LIVE.timeup=true;liveDraw()}
  },100);
 }
+function liveClock(t){
+ const c=$('#lt'),m=LIVE.cur,tb=$('#tb');if(!m)return;
+ const left=Math.max(0,LIVE.end-t)/1000,frac=LIVE.open?Math.min(1,left/m.time):1;
+ if(c){c.style.setProperty('--p',frac);c.querySelector('b').textContent=LIVE.open?Math.ceil(left):Math.max(1,Math.ceil((LIVE.go-t)/1000));c.classList.toggle('low',LIVE.open&&left<=5)}
+ if(tb)tb.style.width=frac*100+'%';
+}
 function liveAnswer(a){if(LIVE.mine!==undefined||LIVE.timeup)return;LIVE.mine=a;SFX.click();mpSend({t:'ans',i:LIVE.cur.i,a});liveDraw()}
 function liveDraw(){
  const m=LIVE.cur;if(!m)return;const q=m.q,pres=MP.spec,lab=SUBLABEL[q.sub]?' · '+SUBLABEL[q.sub]:'';
- const head=`<div class="live-top"><span class="lv">${esc(q.lv)}</span>Question ${m.i+1} of ${m.n}${esc(lab)}<span class="lcount" id="lc">${m.count} / ${m.of} answered</span></div>`;
- const title=`<div class="ltime" id="lt"></div><h2>${esc(q.q)}${TTS?' <button class="chip lis" id="ls" aria-label="Listen to the question">🔊</button>':''}</h2>`;
- const opts=(click)=>`<div class="lopts">${q.o.map((o,i)=>`<${click?'button':'div'} class="lopt${LIVE.pick.includes(i)?' on':''}" data-i="${i}" style="--c:${LCOL[i%6][0]}"${click&&q.t==='multi'?` aria-pressed="${LIVE.pick.includes(i)}"`:''}><span class="shp" aria-hidden="true">${LCOL[i%6][1]}</span><span>${esc(o)}</span></${click?'button':'div'}>`).join('')}</div>`;
+ const head=`<div class="live-top"><span class="lv">${esc(q.lv)}</span>Stop ${m.i+1} of ${m.n}${esc(lab)}<span class="lcount" id="lc">${m.count} / ${m.of} answered</span></div>`;
+ const title=`<div class="lclock" id="lt" role="timer" aria-label="Seconds left"><b></b></div><h2>${esc(q.q)}${TTS?' <button class="chip lis" id="ls" aria-label="Listen to the question">🔊</button>':''}</h2>`;
+ const opts=click=>`<div class="lopts">${q.o.map((o,i)=>`<${click?'button':'div'} class="lopt${LIVE.pick.includes(i)?' on':''}" data-i="${i}"${click&&q.t==='multi'?` aria-pressed="${LIVE.pick.includes(i)}"`:''}>${plat(i)}<span class="txt">${esc(o)}</span></${click?'button':'div'}>`).join('')}</div>`;
  let body;
  if(!LIVE.open)body='<p class="lready">Get ready…</p>';
- else if(pres)body=q.o?opts(false)+(q.t==='multi'?'<p class="mute">Choose ALL the correct answers.</p>':''):q.t==='order'?`<div class="row">${q.words.map(w=>`<span class="chip lword">${esc(w)}</span>`).join('')}</div><p class="mute">Put the words in order on your device.</p>`:`<p class="mute">${q.t==='num'?'Write a number':'Type the answer'} on your device.</p>`;
- else if(LIVE.mine!==undefined)body='<div class="lwait"><b>✓ Answer sent</b><p class="mute">Waiting for the others…</p></div>';
+ else if(pres)body=q.o?opts(false)+(q.t==='multi'?'<p class="mute">Choose ALL the correct platforms.</p>':''):q.t==='order'?`<div class="row">${q.words.map(w=>`<span class="chip lword">${esc(w)}</span>`).join('')}</div><p class="mute">Put the words in order on your device.</p>`:`<p class="mute">${q.t==='num'?'Write a number':'Type the answer'} on your device.</p>`;
+ else if(LIVE.mine!==undefined)body=`<div class="lwait">${locoSVG(livery(MP.id))}<b>✓ All aboard!</b><p class="mute">Answer sent. Waiting for the others…</p></div>`;
  else if(LIVE.timeup)body='<div class="lwait"><b>⏱ Time’s up!</b><p class="mute">Waiting for the results…</p></div>';
  else if(q.t==='mc')body=opts(true);
- else if(q.t==='multi')body=opts(true)+'<p class="mute">Choose ALL the correct answers.</p><div class="row"><button class="main" id="lok">Send answer</button></div>';
+ else if(q.t==='multi')body=opts(true)+'<p class="mute">Choose ALL the correct platforms.</p><div class="row"><button class="main" id="lok">Send answer</button></div>';
  else if(q.t==='order')body='<div class="slot" id="seq" aria-label="Your answer"></div><div class="row" id="pool"></div><div class="row" style="margin-top:8px"><button class="main" id="lok">Send answer</button></div>';
  else body=`<input id="li" ${q.t==='num'?'type="number" inputmode="decimal"':'autocomplete="off" autocapitalize="none" spellcheck="false"'} aria-label="Your answer"><div class="row" style="margin-top:10px"><button class="main" id="lok">Send answer</button></div>`;
- app.innerHTML=`${head}<div class="bar"><i id="tb"></i></div><div class="card ticket live">${title}${body}</div>${liveCtl()}`;
- liveBindCtl();
+ const mine=pres?'':`<div class="myline">${trackHTML(liveMi(LIVE.myScore||0,m.n),livery(MP.id))}</div>`;
+ const board=pres?`<div class="card"><div class="section-kicker">Boarding</div><ul class="boarding" id="bd"></ul></div>`:'';
+ app.innerHTML=`${head}<div class="bar"><i id="tb"></i></div>${mine}<div class="card ticket live">${title}${body}</div>${board}${liveCtl()}`;
+ liveBindCtl();liveBoarding();liveClock(performance.now());
  if($('#ls'))$('#ls').onclick=()=>speak(q.q);
- const t=performance.now(),el=$('#lt');if(el)el.textContent=LIVE.open?Math.ceil(Math.max(0,LIVE.end-t)/1000):Math.max(1,Math.ceil((LIVE.go-t)/1000));
  if(pres||!LIVE.open||LIVE.mine!==undefined||LIVE.timeup)return;
  if(q.t==='mc')app.querySelectorAll('.lopt').forEach(b=>b.onclick=()=>liveAnswer(+b.dataset.i));
  if(q.t==='multi'){app.querySelectorAll('.lopt').forEach(b=>b.onclick=()=>{SFX.click();const i=+b.dataset.i,k=LIVE.pick.indexOf(i);k<0?LIVE.pick.push(i):LIVE.pick.splice(k,1);b.classList.toggle('on',k<0);b.setAttribute('aria-pressed',k<0)});$('#lok').onclick=()=>liveAnswer(LIVE.pick.slice())}
@@ -1330,18 +1409,32 @@ function liveDraw(){
  }
  const li=$('#li');if(li){li.focus();const go=()=>{if(li.value.trim())liveAnswer(li.value.trim())};$('#lok').onclick=go;li.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();if(!e.repeat)go()}}}
 }
-function liveRows(list,max){return `<ol class="lboard">${list.slice(0,max).map((p,i)=>`<li class="${p.id===MP.id?'me':''}"><span class="rk">${i+1}</span><span class="nm">${esc(p.name)}${p.id===MP.id?' (you)':''}</span><span class="sc">${fmt(p.score)}</span></li>`).join('')||'<li class="mute">No players.</li>'}</ol>`}
+// One lane per player: every train starts where it stopped last time and rolls to its new position.
+function liveLanes(list,n){
+ const prev=LIVE.prev||{};
+ return `<div class="lanes"><div class="lanehead" aria-hidden="true"><span>Driver</span><span><span>London</span><span>Edinburgh</span></span><span style="text-align:right">${UL()}</span></div>${list.map((p,i)=>{const from=liveMi(prev[p.id]||0,n),to=liveMi(p.score,n),gain=D(to)-D(from);
+  return `<div class="lane${p.id===MP.id?' me':''}"><span class="lname"><i>${i+1}</i>${esc(p.name)}</span><div class="lrail">${ROUTE.slice(1,-1).map(([s,m])=>`<i class="stn" style="left:${at(m/TOTAL)}"></i>`).join('')}<span class="ltrain" data-to="${to/TOTAL}" style="left:${at(from/TOTAL)}">${locoSVG(livery(p.id))}</span></div><span class="ld">${D(to)}${gain>0?`<small>+${gain}</small>`:''}</span></div>`}).join('')}</div>`;
+}
+function liveRoll(list){requestAnimationFrame(()=>requestAnimationFrame(()=>{app.querySelectorAll('.ltrain').forEach(t=>t.style.left=at(+t.dataset.to))}));LIVE.prev=Object.assign(LIVE.prev||{},Object.fromEntries(list.map(p=>[p.id,p.score])))}
+function liveBoard(list,n,title,sub){return `<div class="dboard"><h2>${title}<small>${sub||''}</small></h2>${list.map((p,i)=>{const mi=liveMi(p.score,n);return `<div class="drow top${p.id===MP.id?' me':''}"><span>${String(i+1).padStart(2,'0')}</span><span class="nm"><span>${esc(p.name)}${p.id===MP.id?' (you)':''}</span><span class="st">${esc(where(mi))}</span></span><b>${D(mi)} ${unit()}</b></div>`}).join('')||'<p>No players.</p>'}</div>`}
 function liveReveal(m){
  clearInterval(timer);LIVE.cur=null;
  const q=m.q,me=m.me,last=m.i>=m.n-1,key=MP.round+'-'+m.i,c=me?(me.none||me.sc<.4?'bad':me.sc<.8?'mid':'good'):'';
- if(LIVE.shown!==key){LIVE.shown=key;if(me&&!me.none&&q.sub)trackProg([{sub:q.sub,q:q.q,sc:me.sc,c:c==='bad'?'none':c}]);c==='good'?SFX.good():c==='mid'?SFX.mid():c==='bad'?SFX.bad():SFX.clack(2)}
- const res=me?`<div class="card lres ${c}"><div class="lbig">${me.none?'⏱ No answer':c==='good'?'✔ Correct!':c==='mid'?'◑ Nearly!':'✘ Not this time'}</div><p class="lpts">+${fmt(me.pts+me.bonus)} points${me.bonus?` (🔥 streak bonus +${me.bonus})`:''}</p><p>You are <b>${ord(me.rank)}</b> of ${me.of} with ${fmt(me.score)} points${me.streak>1?` · 🔥 ${me.streak} in a row`:''}</p></div>`:'';
+ const fresh=LIVE.shown!==key;
+ if(fresh){LIVE.shown=key;if(me&&!me.none&&q.sub)trackProg([{sub:q.sub,q:q.q,sc:me.sc,c:c==='bad'?'none':c}]);c==='good'?SFX.good():c==='mid'?SFX.mid():c==='bad'?SFX.bad():0;SFX.clack(3)}
+ let res='';
+ if(me){
+  const from=liveMi(fresh?me.prev:me.score,m.n),to=liveMi(me.score,m.n),gain=D(to)-D(liveMi(me.prev,m.n));LIVE.myScore=me.score;
+  res=`<div class="card lres ${c}"><div class="lbig">${me.none?'⏱ No answer':c==='good'?'✔ Correct!':c==='mid'?'◑ Nearly!':'✘ Not this time'}</div><p class="lpts">+${gain} ${UL()}${me.bonus?` · 🔥 streak`:''}</p><div class="myline">${trackHTML(from,livery(MP.id))}</div><p>You are <b>${ord(me.rank)}</b> of ${me.of}. ${to>=TOTAL?'<b>You have arrived in Edinburgh!</b>':`Next stop: <b>${esc(nextStation(to))}</b>.`}${me.streak>1?` 🔥 ${me.streak} in a row`:''}</p></div>`;
+  if(fresh)setTimeout(()=>adv(to),300);
+ }
  const tot=Math.max(1,...(m.dist||[0])),ok=i=>Array.isArray(m.correct.a)?m.correct.a.includes(i):m.correct.a===i;
- const dist=m.dist?`<div class="ldist">${q.o.map((o,i)=>`<div class="ldrow${ok(i)?' ok':''}"><span class="shp" style="color:${LCOL[i%6][0]}" aria-hidden="true">${LCOL[i%6][1]}</span><span class="ldl">${esc(o)}${ok(i)?' ✔':''}<span class="ldbar" style="--c:${LCOL[i%6][0]};width:${Math.round(100*m.dist[i]/tot)}%"></span></span><b>${m.dist[i]}</b></div>`).join('')}</div>`:'';
- app.innerHTML=`<div class="live-top"><span class="lv">${esc(q.lv)}</span>Question ${m.i+1} of ${m.n}<span class="lcount">${m.count} / ${m.of} answered</span></div>${res}
- <div class="card"><p class="mute" style="margin-top:0">${esc(q.q)}</p><div class="section-kicker">Correct answer</div><h2>${esc(m.correct.text)}</h2>${dist}</div>
- <div class="card"><h2>🏆 Top ${Math.min(5,m.top.length)}</h2>${liveRows(m.top,5)}</div>
- <div class="row">${MP.host?`<button class="main" id="lnx">${last?'Show the podium 🏆':'Next question →'}</button>${last?'':'<button id="len">End game</button>'}`:'<p class="mute">Waiting for the host…</p>'}</div>`;
+ const dist=m.dist?`<div class="ldist">${q.o.map((o,i)=>`<div class="ldrow${ok(i)?' ok':''}">${plat(i)}<span class="ldl">${esc(o)}${ok(i)?' ✔':''}<span class="ldbar" style="width:${Math.round(100*m.dist[i]/tot)}%"></span></span><b>${m.dist[i]}</b></div>`).join('')}</div>`:'';
+ const answer=`<div class="card"><p class="mute" style="margin-top:0">${esc(q.q)}</p><div class="section-kicker">Correct answer</div><h2>${esc(m.correct.text)}</h2>${dist}</div>`;
+ const line=MP.spec?`<div class="card"><div class="section-kicker">The line · after stop ${m.i+1} of ${m.n}</div><h2>Where are the trains?</h2>${liveLanes(m.top,m.n)}</div>`:liveBoard(m.top.slice(0,5),m.n,'Leaders','after stop '+(m.i+1));
+ app.innerHTML=`<div class="live-top"><span class="lv">${esc(q.lv)}</span>Stop ${m.i+1} of ${m.n}<span class="lcount">${m.count} / ${m.of} answered</span></div>${res}${MP.spec?line+answer:answer+line}
+ <div class="row">${MP.host?`<button class="main" id="lnx">${last?'Show the arrivals board 🏁':'Next stop →'}</button>${last?'':'<button id="len">End game</button>'}`:'<p class="mute">Waiting for the host…</p>'}</div>`;
+ if(MP.spec)liveRoll(m.top);
  if($('#lnx')){$('#lnx').onclick=()=>{$('#lnx').disabled=true;last?mpSend({t:'end'}):liveSend(m.i+1)};$('#lnx').focus()}
  liveBindCtl();
 }
@@ -1349,11 +1442,13 @@ function livePodium(m){
  clearInterval(timer);LIVE.cur=null;
  const b=m.board,k=b.findIndex(p=>p.id===MP.id),me=b[k],key='final-'+MP.round;
  if(LIVE.shown!==key){LIVE.shown=key;SFX.fanfare();confetti()}
- app.innerHTML=`<div class="section-kicker">⚡ Live quiz · room ${esc(MP.code)}</div><h1>Podium</h1>
- <div class="podium">${[1,0,2].map(i=>b[i]?`<div class="pod p${i+1}"><div class="pname">${esc(b[i].name)}</div><div class="pblock"><b>${i+1}</b><span>${fmt(b[i].score)}</span></div></div>`:'').join('')}</div>
- ${me?`<div class="card lres good"><div class="lbig">You finished ${ord(k+1)}</div><p class="lpts">${fmt(me.score)} points · ${me.right} of ${m.n} correct</p></div>`:''}
- <div class="card"><h2>Final scores</h2>${liveRows(b,100)}</div>
+ const mi=me?liveMi(me.score,m.n):0;
+ app.innerHTML=`<div class="section-kicker">⚡ Live quiz · room ${esc(MP.code)}</div><h1>Arrivals</h1>
+ ${me?`<div class="card lres good"><div class="lbig">You finished ${ord(k+1)}</div><p class="lpts">${D(mi)} ${UL()} · ${me.right} of ${m.n} correct</p><div class="myline">${trackHTML(mi,livery(MP.id))}</div><p>${esc(where(mi))}.</p></div>`:''}
+ ${MP.spec?`<div class="card"><div class="section-kicker">The line · final positions</div><h2>Every train</h2>${liveLanes(b.slice(0,12),m.n)}</div>`:''}
+ ${liveBoard(b,m.n,'Arrivals · Edinburgh',b.length+' trains')}
  <div class="row">${MP.host?'<button class="main" id="ag">Play again</button>':''}<button id="lv2">Leave room</button></div>`;
+ if(MP.spec)liveRoll(b.slice(0,12));
  if($('#ag'))$('#ag').onclick=()=>mpSend({t:'again'});$('#lv2').onclick=mpLeave;
 }
 function route(){
@@ -1383,14 +1478,17 @@ function menu(){
  let d=null;try{d=JSON.parse(store('cc_daily'))}catch(e){}
  const played=d&&d.date===today(),th=dayTh(),n=streak();
  const groups=GROUPS,P=prog(),WQ=wrongQs();
- const cards=groups.map(g=>{const count=Q.filter(q=>q.th===g.k).length;return `<section class="topic-card" data-topic="${g.k}"><div class="topic-head"><div class="topic-icon">${g.icon}</div><div><h3>${g.name}</h3><p>${g.desc} · ${count} questions</p></div></div><div class="subtopics">${g.subs.map(sub=>{if(sub[0]==='#')return `<div class="subhead">${sub.slice(1)}</div>`;const c=Q.filter(q=>q.sub===sub).length;return `<button class="subtopic" data-th="${g.k}" data-sub="${sub}"><span>${SUBLABEL[sub]}</span><span class="sub-count">${c} ${c===1?'Q':'Qs'}${P[sub]&&P[sub].n>=2?' · '+Math.round(100*P[sub].s/P[sub].n)+'%':''}</span></button>`}).join('')}</div><button class="topic-all" data-t="${g.k}">Practise all ${g.name.toLowerCase()} →</button></section>`}).join('');
- app.innerHTML=`<header class="masthead"><div class="eyebrow">All aboard · English practice</div><h1>Clickety-Clack</h1><p class="subtitle">A little practice. A longer journey. Build your English from A1 to B1.</p></header>
- <div class="card feature-card"><div class="feature-top"><div><div class="section-kicker">🚦 Today’s departure</div><h2>Daily challenge</h2><p>Today’s focus: <b>${IC[th]} ${TN[th]}</b>. Seven questions, one shared challenge.</p><p class="mute">${n?'🔥 '+n+(n>1?' days':' day')+' in a row':'Play today to start your streak.'}</p></div><div class="feature-emoji">🎟️</div></div><div class="row" style="margin-top:12px"><button class="main" id="dc">${played?'See today’s result':'Start today’s train'} →</button><button id="mix">🎲 Mixed practice</button></div></div>
- ${WQ.length?`<div class="card"><div class="section-kicker">🔁 Learn from mistakes</div><h2>Fix my mistakes</h2><p class="mute">${WQ.length} question${WQ.length>1?'s':''} to try again. Answer correctly to remove them from the list.</p><button class="main" id="fx">Practise my mistakes →</button></div>`:''}
- <div class="section-kicker">Choose your learning route</div><h2>Explore by topic</h2><p class="mute">Pick a whole subject or go straight to a smaller theme. Short topic rounds use the questions available in that theme.</p><div class="menu-grid">${cards}</div>
- <section class="card"><div class="section-kicker">🎮 Play together</div><h2>Multiplayer</h2><p class="mute">⚡ Live quiz: show the questions on your screen while everybody answers on their phone, then see the scores and the podium. Or start a 🚂 train race where everyone plays at their own speed.</p><div class="row"><button class="main" id="mph">Host a game</button><button id="mpj">Join with a code</button></div></section>
- <section class="card"><div class="section-kicker">👩‍🏫 For the classroom</div><h2>Class game</h2><p class="mute">Create a shared quiz link and QR code for your students.</p><label for="cs">Choose a topic</label><select id="cs" aria-label="Topic">${'GVEWM'.split('').map(k=>`<option value="${k}">${k==='M'?'🎲 Mixed topics':IC[k]+' '+TN[k]}</option>`).join('')}</select><div class="row" style="margin-top:12px"><button class="main" id="cg">Create class game →</button></div></section>
- <details class="card details-card"><summary>How to play</summary><ul><li>Daily and full-topic rounds have 7 questions, from A1 to B1.</li><li>Short theme rounds include the questions available for that theme.</li><li>Correct answers add miles and carriages; quick answers and streaks can earn bonuses.</li><li>London to Edinburgh is ${TOTAL} miles. Can you get the train all the way there?</li></ul></details>`;
+ const cards=groups.map(g=>{const count=Q.filter(q=>q.th===g.k).length;return `<section class="topic-card" data-topic="${g.k}"><div class="topic-head"><div class="topic-icon" aria-hidden="true">${g.k}</div><div><h3>${g.name} line</h3><p>${g.desc} · ${count} questions</p></div></div><div class="subtopics">${g.subs.map(sub=>{if(sub[0]==='#')return `<div class="subhead">${sub.slice(1)}</div>`;const c=Q.filter(q=>q.sub===sub).length;return `<button class="subtopic" data-th="${g.k}" data-sub="${sub}"><span>${SUBLABEL[sub]}</span><span class="sub-count">${c} Q${P[sub]&&P[sub].n>=2?' · '+Math.round(100*P[sub].s/P[sub].n)+'%':''}</span></button>`}).join('')}</div><button class="topic-all" data-t="${g.k}">Ride the whole line →</button></section>`}).join('');
+ const dt=new Date(),u=unit();
+ app.innerHTML=`<header class="masthead"><div class="eyebrow">Platform A1–B1 · English practice</div><h1>Clickety-Clack</h1><p class="subtitle">A little practice. A longer journey. Build your English from A1 to B1, one station at a time.</p><div class="mast-rail" aria-hidden="true"><div class="mast-train"><i></i><i></i><i></i>${locoSVG('#c2412d')}</div></div></header>
+ <div class="card feature-card"><div class="feature-main"><div class="section-kicker">Today’s departure</div><h2>Daily challenge</h2><p>Today’s focus: <b>${IC[th]} ${TN[th]}</b>. Seven questions, one shared journey from London to Edinburgh.</p><p class="mute">${n?'🔥 '+n+(n>1?' days':' day')+' in a row':'Play today to start your streak.'}</p><div class="row" style="margin-top:14px"><button class="main" id="dc">${played?'See today’s result':'Board today’s train'} →</button><button id="mix">🎲 Mixed practice</button></div></div><div class="feature-stub" aria-hidden="true"><span>${dt.toLocaleDateString('en-GB',{day:'numeric',month:'short'})}</span><b>7</b><span>stops</span><span>single</span></div></div>
+ ${WQ.length?`<div class="card"><div class="section-kicker">Lost property</div><h2>Fix my mistakes</h2><p class="mute">${WQ.length} question${WQ.length>1?'s':''} to try again. Answer correctly to remove them from the list.</p><button class="main" id="fx">Practise my mistakes →</button></div>`:''}
+ <div class="section-kicker">Network map</div><h2>Choose your line</h2><p class="mute">Every topic is a line and every theme is a stop. Pick a stop for a short lesson and quiz, or ride the whole line.</p><div class="menu-grid">${cards}</div>
+ <section class="card"><div class="section-kicker">Play together</div><h2>Multiplayer</h2><p class="mute">⚡ Live quiz: show the questions on your screen, everybody answers on their phone and every player drives their own train. Or start a 🚂 train race where everyone plays at their own speed.</p><div class="row"><button class="main" id="mph">Host a game</button><button id="mpj">Join with a code</button></div></section>
+ <section class="card"><div class="section-kicker">For the classroom</div><h2>Class game</h2><p class="mute">Create a shared quiz link and QR code for your students.</p><label for="cs">Choose a topic</label><select id="cs" aria-label="Topic">${'GVEWM'.split('').map(k=>`<option value="${k}">${k==='M'?'🎲 Mixed topics':IC[k]+' '+TN[k]}</option>`).join('')}</select><div class="row" style="margin-top:12px"><button class="main" id="cg">Create class game →</button></div></section>
+ <section class="card"><div class="section-kicker">Settings</div><h2>Distance</h2><p class="mute">Show your journey in miles or kilometres.</p><div class="unit-pick" role="group" aria-label="Distance unit"><button data-u="mi" aria-pressed="${u==='mi'}">Miles</button><button data-u="km" aria-pressed="${u==='km'}">Kilometres</button></div></section>
+ <details class="card details-card"><summary>How to play</summary><ul><li>Daily and full-topic rounds have 7 questions, from A1 to B1.</li><li>Short theme rounds include the questions available for that theme.</li><li>Correct answers move your train and add carriages; quick answers and streaks can earn bonus distance.</li><li>London to Edinburgh is ${D(TOTAL)} ${UL()}. Can you get the train all the way there?</li></ul></details>`;
+ app.querySelectorAll('[data-u]').forEach(b=>b.onclick=()=>{store('cc_unit',b.dataset.u);SFX.click();menu()});
  $('#dc').onclick=()=>{if(played){RM=d.meta||{name:store('cc_name')||'',mode:'Daily challenge',topic:'',date:d.date};result(d.res,true)}else{SFX.whistle();start(false,th)}};
  $('#mix').onclick=()=>{SFX.whistle();start(true,'M')};
  if($('#fx'))$('#fx').onclick=()=>{SFX.whistle();start(true,'M',undefined,undefined,'__wrong')};
@@ -1399,7 +1497,7 @@ function menu(){
  $('#cg').onclick=()=>classHost($('#cs').value);
  $('#mph').onclick=mpHostScreen;$('#mpj').onclick=()=>mpJoinScreen('');
 }
-function drawBoard(code){let a=[];try{a=JSON.parse(store('cc_board_'+code))||[]}catch(e){}a.sort((x,y)=>y.m-x.m||x.l-y.l);$('#bd').innerHTML=a.length?`<ol>${a.map(x=>`<li><b>${esc(x.n)}</b> ${x.m} miles · ${x.l} min late ${esc(x.s)}</li>`).join('')}</ol>`:''}
+function drawBoard(code){let a=[];try{a=JSON.parse(store('cc_board_'+code))||[]}catch(e){}a.sort((x,y)=>y.m-x.m||x.l-y.l);$('#bd').innerHTML=a.length?`<ol>${a.map(x=>`<li><b>${esc(x.n)}</b> ${D(x.m)} ${UL()} · ${x.l} min late ${esc(x.s)}</li>`).join('')}</ol>`:''}
 function classHost(th){
  const code=[0,0,0,0].map(()=>'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[Math.floor(Math.random()*32)]).join(''),link=BASE+'#class-'+code+'-'+th;
  app.innerHTML=`<h1>Class game</h1><p class='mute'>Topic: ${th==='M'?'Mixed topics':TN[th]} · code <b>${code}</b></p><div class='card'><p>Students scan this QR code, type their name and play the same 7 questions.</p><div id='qr' style='background:#fff;padding:10px;width:fit-content;margin:8px auto'></div><p class='mute' style='word-break:break-all'>${link}</p><div class='row'><button class='main' id='play'>Play too</button><button id='mn'>Menu</button></div></div><div class='card'><h2>Class board</h2><p class='mute'>Each student taps “Copy line” at the end and sends it to you. Paste the lines here.</p><textarea id='ta' rows='3' aria-label='Results'></textarea><div class='row' style='margin-top:8px'><button id='add'>Add to board</button></div><div id='bd'></div></div>`;

@@ -62,15 +62,16 @@ function cleanAns(q, a) {
   return Array.isArray(a) && a.length <= 20 && a.every(s => typeof s === 'string') ? a.map(s => s.slice(0, 30)) : null;
 }
 const active = r => [...r.players.values()].filter(p => !p.spec);
-const liveBoard = r => active(r).map(p => ({ id: p.id, name: p.name, score: p.score, right: p.right, online: !!p.ws })).sort((a, b) => b.score - a.score || b.right - a.right);
+const answeredIds = r => active(r).filter(p => p.ans).map(p => p.id);
+const liveBoard = r => active(r).map(p => ({ id: p.id, name: p.name, c: p.c, score: p.score, right: p.right, online: !!p.ws })).sort((a, b) => b.score - a.score || b.right - a.right);
 function sendQuestion(r, p) {
   const L = r.live, now = Date.now();
-  send(p.ws, { t: 'lq', i: L.i, n: L.n, q: L.pub, time: L.time, wait: Math.max(0, L.startAt - now), left: Math.max(0, L.endAt - now), answered: !!p.ans, count: L.count, of: active(r).length });
+  send(p.ws, { t: 'lq', i: L.i, n: L.n, q: L.pub, time: L.time, wait: Math.max(0, L.startAt - now), left: Math.max(0, L.endAt - now), answered: !!p.ans, count: L.count, of: active(r).length, who: answeredIds(r) });
 }
 function sendReveal(r, p) {
   const L = r.live, k = L.board.findIndex(x => x.id === p.id), a = p.ans || { sc: 0, pts: 0, bonus: 0, none: true };
-  send(p.ws, { t: 'lreveal', i: L.i, n: L.n, q: L.pub, correct: { text: correctText(L.q), a: L.q.t === 'mc' || L.q.t === 'multi' ? L.q.a : null }, dist: L.dist, count: L.count, of: active(r).length, top: L.board.slice(0, 5),
-    me: k < 0 ? null : { sc: a.sc, pts: a.pts, bonus: a.bonus, none: !!a.none, score: p.score, right: p.right, streak: p.streak, rank: k + 1, of: L.board.length } });
+  send(p.ws, { t: 'lreveal', i: L.i, n: L.n, q: L.pub, correct: { text: correctText(L.q), a: L.q.t === 'mc' || L.q.t === 'multi' ? L.q.a : null }, dist: L.dist, count: L.count, of: active(r).length, top: L.board.slice(0, 10),
+    me: k < 0 ? null : { sc: a.sc, pts: a.pts, bonus: a.bonus, none: !!a.none, score: p.score, prev: p.score - a.pts - a.bonus, right: p.right, streak: p.streak, rank: k + 1, of: L.board.length } });
 }
 const sendFinal = (r, p) => send(p.ws, { t: 'lfinal', board: r.live.board, n: r.live.n });
 function sendLive(r, p) {
@@ -105,11 +106,11 @@ function checkAll(r) {
 function snapshot(r, viewer) {
   const host = r.players.get(r.hostId), live = r.mode === 'live';
   return {
-    code: r.code, state: r.state, round: r.round, theme: r.theme, sub: r.sub, mode: r.mode, n: r.n, hostId: r.hostId, hostName: host ? host.name : '',
+    code: r.code, state: r.state, round: r.round, theme: r.theme, sub: r.sub, mode: r.mode, n: r.n, unit: r.unit, hostId: r.hostId, hostName: host ? host.name : '',
     // In a live quiz only the host gets the seed: it decides which questions (and answers) come next.
     seed: !live || (viewer && viewer.id === r.hostId) ? r.seed : '',
     live: live && r.live ? { phase: r.live.phase, i: r.live.i, n: r.live.n } : null,
-    players: active(r).map(p => ({ id: p.id, name: p.name, host: p.id === r.hostId, online: !!p.ws, mi: p.mi, late: p.late, sq: p.sq, done: p.done, i: p.i, score: p.score, right: p.right }))
+    players: active(r).map(p => ({ id: p.id, name: p.name, c: p.c, host: p.id === r.hostId, online: !!p.ws, mi: p.mi, late: p.late, sq: p.sq, done: p.done, i: p.i, score: p.score, right: p.right }))
       .sort(live ? (a, b) => b.score - a.score || b.right - a.right : (a, b) => b.mi - a.mi || a.late - b.late || Number(b.done) - Number(a.done))
   };
 }
@@ -120,7 +121,8 @@ function bcast(r) { r.touched = Date.now(); for (const p of r.players.values()) 
 function addPlayer(r, ws, name, spec) {
   let n = name, k = 2; const names = new Set([...r.players.values()].map(p => p.name));
   while (names.has(n)) n = name + ' ' + k++;
-  const p = { id: rid(), token: rid() + rid(), name: n, ws, spec: !!spec, mi: 0, late: 0, sq: '', i: 0, done: false, score: 0, streak: 0, right: 0, ans: null };
+  // c = train colour: players get different colours in the order they join.
+  const p = { id: rid(), token: rid() + rid(), name: n, c: spec ? 0 : (r.cars = (r.cars || 0) + 1) - 1, ws, spec: !!spec, mi: 0, late: 0, sq: '', i: 0, done: false, score: 0, streak: 0, right: 0, ans: null };
   r.players.set(p.id, p); return p;
 }
 const attach = (ws, room, p) => { ws.ctx = { room, pid: p.id }; p.ws = ws; };
@@ -144,8 +146,8 @@ function onMsg(ws, m) {
       if (rooms.size >= MAX_ROOMS) return err(ws, 'The server is busy. Please try again later.');
       const theme = typeof m.theme === 'string' && m.theme.length === 1 && 'MGVEW'.includes(m.theme) ? m.theme : 'M';
       const sub = typeof m.sub === 'string' && /^[a-z]-[a-z]+$/.test(m.sub) ? m.sub : null;
-      const mode = m.mode === 'live' ? 'live' : 'race', n = Math.max(3, Math.min(30, int(m.n, 30) || 10));
-      const room = { code: code4(), hostId: null, state: 'lobby', round: 0, theme, sub, mode, n, live: null, seed: '', players: new Map(), touched: Date.now() };
+      const mode = m.mode === 'live' ? 'live' : 'race', n = Math.max(3, Math.min(30, int(m.n, 30) || 10)), unit = m.unit === 'km' ? 'km' : 'mi';
+      const room = { code: code4(), hostId: null, state: 'lobby', round: 0, theme, sub, mode, n, unit, live: null, seed: '', players: new Map(), touched: Date.now() };
       rooms.set(room.code, room);
       // In a live quiz the host presents the questions and does not play.
       const pl = addPlayer(room, ws, clean(m.name) || 'Host', mode === 'live' || m.play === false);
@@ -201,13 +203,15 @@ function onMsg(ws, m) {
       if (now < L.startAt - 500 || now > L.endAt + 1000) return;
       const a = cleanAns(L.q, m.a), sc = a == null ? 0 : scoreAns(L.q, a);
       const used = Math.min(1, Math.max(0, (now - L.startAt) / (L.time * 1000)));
-      const pts = Math.round(sc * (1000 - 500 * used));
+      // Up to 1000 per question (600 for the answer, 300 for speed, 100 streak bonus), so a perfect game
+      // is exactly 1000 × questions: the client turns this into distance along the London–Edinburgh line.
+      const pts = Math.round(sc * (600 + 300 * (1 - used)));
       p.streak = sc >= 0.8 ? p.streak + 1 : 0;
-      const bonus = p.streak >= 2 ? Math.min(500, (p.streak - 1) * 100) : 0;
+      const bonus = p.streak >= 2 ? Math.min(100, (p.streak - 1) * 25) : 0;
       if (sc >= 0.8) p.right++;
       p.score += pts + bonus; p.ans = { a, sc, pts, bonus }; L.count++;
       send(ws, { t: 'lack', i: L.i });
-      toAll(r, { t: 'lcount', i: L.i, count: L.count, of: active(r).length });
+      toAll(r, { t: 'lcount', i: L.i, count: L.count, of: active(r).length, who: answeredIds(r) });
       return checkAll(r);
     }
     case 'skip':

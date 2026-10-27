@@ -1,8 +1,8 @@
 # Clickety-Clack: English train quiz with live multiplayers
 
 A quiz game for English learners (A1–B1). Players answer 7 questions and "drive" a train from London to Edinburgh.
-Includes mini lessons, text-to-speech, a results report and a shareable result image.
-This version adds **live multiplayer rooms**: the host creates a room, players scan a QR code and type a name. Play a **live quiz** (one question at a time on the host's screen, fast answers score more, podium at the end) or a **train race** on a live leaderboard.
+Includes mini lessons, text-to-speech, a results report, a shareable result image and a miles / kilometres setting. The design is inspired by old railway posters, station signs and departure boards.
+This version adds **live multiplayer rooms**: the host creates a room, players scan a QR code and type a name. Play a **live quiz** (one question at a time on the host's screen; every player drives their own train, fast correct answers take it further; arrivals board at the end) or a **train race** on a live leaderboard.
 
 ## Run locally
 
@@ -47,7 +47,7 @@ Caddy: `yourdomain.com { reverse_proxy 127.0.0.1:3000 }`.
 Use HTTPS in production: phones and browsers only allow some features (clipboard, secure WebSocket) on secure pages.
 
 ## How multiplayer works
-- `Host a game` → choose a game type, a topic or subtopic → a 4-letter room code and QR code appear.
+- `Host a game` → choose a game type, a topic or subtopic and the distance unit (miles or kilometres) → a 4-letter room code and QR code appear.
 - Players scan the QR code (or open the link / type the code), enter a name and wait in the lobby.
 - The host can remove players, play again, or end the game.
 - If a player refreshes the page or loses the connection, the browser reconnects to the same room automatically.
@@ -55,11 +55,11 @@ Use HTTPS in production: phones and browsers only allow some features (clipboard
 
 ### ⚡ Live quiz (game-show style)
 - The host shows their screen to the class (projector or shared screen). The host presents and does not play. Choose 5, 10, 15 or 20 questions.
-- Everyone gets the **same question at the same time**: a 3-second “get ready”, then the timer. Players answer on their phones with big coloured buttons (or type / put words in order).
+- Everyone gets the **same question at the same time**: a 3-second “get ready”, then the station clock. Answers are shown as numbered platforms; players choose on their phones (or type / put words in order). The host sees who has boarded (answered).
 - The question ends when everyone has answered or the time is up. The host can also press **Skip**.
-- After each question: the correct answer, how many players chose each option, and the top 5. Each player sees their own result and place.
-- **Points:** up to 1,000 per question, more for faster answers (half points for an answer in the last second). From the second correct answer in a row there is a streak bonus (+100, +200 … up to +500).
-- At the end: a podium for the top 3 and the full scores. **Play again** keeps everybody in the room.
+- After each question: the correct answer, how many players chose each platform, and **the line**: one lane per player with their own train moving towards Edinburgh. Each player sees their own train, the distance it travelled and the next station.
+- **Distance, not points:** a perfect game reaches Edinburgh (393 miles / 632 km). Each question is worth one equal part of the journey: 60% for a correct answer, up to 30% more for speed, and up to 10% streak bonus from the second correct answer in a row.
+- At the end: the arrivals board with every train and where it stopped. **Play again** keeps everybody in the room.
 - Wrong answers are added to each player's “Fix my mistakes” list.
 
 ### 🚂 Train race
