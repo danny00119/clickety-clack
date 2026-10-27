@@ -8,7 +8,7 @@ const QRCode = require('qrcode');
 const PORT = Number(process.env.PORT) || 3000;
 const PUB = path.join(__dirname, 'public');
 const MAX_PLAYERS = 80, MAX_ROOMS = 300;
-const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.svg': 'image/svg+xml', '.png': 'image/png', '.ico': 'image/x-icon', '.json': 'application/json', '.txt': 'text/plain; charset=utf-8' };
+const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.svg': 'image/svg+xml', '.png': 'image/png', '.ico': 'image/x-icon', '.json': 'application/json', '.txt': 'text/plain; charset=utf-8', '.md': 'text/markdown; charset=utf-8' };
 const CSP = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' ws: wss:; frame-ancestors 'self'";
 const ALPH = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const rooms = new Map();
@@ -116,6 +116,17 @@ const server = http.createServer(async (req, res) => {
     res.setHeader('Referrer-Policy', 'no-referrer');
     res.setHeader('Content-Security-Policy', CSP);
     if (u.pathname === '/healthz') { res.setHeader('Content-Type', 'text/plain'); return res.end('ok'); }
+    if (u.pathname === '/vocabulary_a1_b1.md' || u.pathname === '/vocabulary') {
+      const vocabPath = path.join(__dirname, 'vocabulary_a1_b1.md');
+      try {
+        const data = await fs.promises.readFile(vocabPath);
+        res.setHeader('Content-Type', 'text/markdown; charset=utf-8');
+        res.setHeader('Cache-Control', 'public, max-age=3600');
+        return res.end(data);
+      } catch (e) {
+        res.statusCode = 404; return res.end('not found');
+      }
+    }
     if (u.pathname === '/qr.svg') {
       const t = u.searchParams.get('u') || '';
       let okUrl = false;

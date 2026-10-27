@@ -1,4 +1,4 @@
-# Clickety-Clack: English train quiz with live multiplayer
+# Clickety-Clack: English train quiz with live multiplayers
 
 A quiz game for English learners (A1–B1). Players answer 7 questions and "drive" a train from London to Edinburgh.
 Includes mini lessons, text-to-speech, a results report and a shareable result image.
@@ -62,6 +62,7 @@ Use HTTPS in production: phones and browsers only allow some features (clipboard
 - **Not included:** user registration (email/password or Google sign-in) and long-term statistics per student. These need a database and an authentication service and can be added as a next step.
 
 ## Files
-- `server.js`: static file server, QR code endpoint (`/qr.svg`), WebSocket rooms (`/ws`), health check (`/healthz`)
+- `server.js`: static file server, QR code endpoint (`/qr.svg`), WebSocket rooms (`/ws`), health check (`/healthz`), and the vocabulary document route (`/vocabulary_a1_b1.md`)
 - `public/index.html`: the whole game
+- `vocabulary_a1_b1.md`: Cambridge-style A1–B1 vocabulary study resource
 - `Dockerfile`, `render.yaml`: deployment
