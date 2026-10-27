@@ -46,8 +46,14 @@ Caddy: `yourdomain.com { reverse_proxy 127.0.0.1:3000 }`.
 
 Use HTTPS in production: phones and browsers only allow some features (clipboard, secure WebSocket) on secure pages.
 
+## Playing alone
+- **Daily challenge:** 7 questions, the same for everybody today.
+- **Custom journey:** tick the grammar and vocabulary topics you want to practise and choose the maximum number of questions (3–30). Longer journeys share the same London–Edinburgh distance.
+- **Lines and stops:** each topic group is a line; open it to see its stops (themes) with a mini lesson and quiz.
+- **Settings:** miles or kilometres, and a volume slider (0–100 %) for sound effects and spoken questions.
+
 ## How multiplayer works
-- `Host a game` → choose a game type, a topic or subtopic and the distance unit (miles or kilometres) → a 4-letter room code and QR code appear.
+- `Host a game` → choose a game type, tick the grammar and vocabulary topics (Everyday English and World topics too, if you like), and set the maximum number of questions (3–30), the maximum number of players (2–80) and the distance unit (miles or kilometres) → a 4-letter room code and QR code appear. When the room is full, new players see “The room is full.”
 - Players scan the QR code (or open the link / type the code), enter a name and wait in the lobby.
 - The host can remove players, play again, or end the game.
 - If a player refreshes the page or loses the connection, the browser reconnects to the same room automatically.
@@ -63,7 +69,7 @@ Use HTTPS in production: phones and browsers only allow some features (clipboard
 - Wrong answers are added to each player's “Fix my mistakes” list.
 
 ### 🚂 Train race
-- Everybody gets the same 7 questions (the server sends one shared random seed) and plays at their own speed. The leaderboard updates after every answer.
+- Everybody gets the same questions (the server sends one shared random seed) and plays at their own speed. The leaderboard updates after every answer.
 - The host can play too, or host without playing (teacher view).
 
 ## Good to know

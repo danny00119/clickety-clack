@@ -16,7 +16,8 @@ const rooms = new Map();
 const code4 = () => { let c; do { c = Array.from({ length: 4 }, () => ALPH[crypto.randomInt(ALPH.length)]).join(''); } while (rooms.has(c)); return c; };
 const clean = s => String(s || '').replace(/[\u0000-\u001f<>&"']/g, '').trim().slice(0, 24);
 const int = (v, max) => Math.max(0, Math.min(max, Math.floor(Number(v)) || 0));
-const cleanSq = v => String(v || '').replace(/[^gmn]/g, '').slice(0, 12);
+const cleanSq = v => String(v || '').replace(/[^gmn]/g, '').slice(0, 40);
+const cleanSubs = v => Array.isArray(v) ? [...new Set(v.filter(s => typeof s === 'string' && /^[a-z]-[a-z]+$/.test(s)))].slice(0, 100) : [];
 const rid = () => crypto.randomBytes(6).toString('hex');
 
 // Live quiz (Kahoot-style): the host's browser sends one question at a time (with its answer),
@@ -106,7 +107,7 @@ function checkAll(r) {
 function snapshot(r, viewer) {
   const host = r.players.get(r.hostId), live = r.mode === 'live';
   return {
-    code: r.code, state: r.state, round: r.round, theme: r.theme, sub: r.sub, mode: r.mode, n: r.n, unit: r.unit, hostId: r.hostId, hostName: host ? host.name : '',
+    code: r.code, state: r.state, round: r.round, theme: r.theme, sub: r.sub, subs: r.subs, max: r.max, mode: r.mode, n: r.n, unit: r.unit, hostId: r.hostId, hostName: host ? host.name : '',
     // In a live quiz only the host gets the seed: it decides which questions (and answers) come next.
     seed: !live || (viewer && viewer.id === r.hostId) ? r.seed : '',
     live: live && r.live ? { phase: r.live.phase, i: r.live.i, n: r.live.n } : null,
@@ -147,7 +148,8 @@ function onMsg(ws, m) {
       const theme = typeof m.theme === 'string' && m.theme.length === 1 && 'MGVEW'.includes(m.theme) ? m.theme : 'M';
       const sub = typeof m.sub === 'string' && /^[a-z]-[a-z]+$/.test(m.sub) ? m.sub : null;
       const mode = m.mode === 'live' ? 'live' : 'race', n = Math.max(3, Math.min(30, int(m.n, 30) || 10)), unit = m.unit === 'km' ? 'km' : 'mi';
-      const room = { code: code4(), hostId: null, state: 'lobby', round: 0, theme, sub, mode, n, unit, live: null, seed: '', players: new Map(), touched: Date.now() };
+      const subs = cleanSubs(m.subs), max = Math.max(2, Math.min(MAX_PLAYERS, int(m.max, MAX_PLAYERS) || 30));
+      const room = { code: code4(), hostId: null, state: 'lobby', round: 0, theme, sub, subs, max, mode, n, unit, live: null, seed: '', players: new Map(), touched: Date.now() };
       rooms.set(room.code, room);
       // In a live quiz the host presents the questions and does not play.
       const pl = addPlayer(room, ws, clean(m.name) || 'Host', mode === 'live' || m.play === false);
@@ -159,7 +161,7 @@ function onMsg(ws, m) {
       const room = rooms.get(String(m.code || '').toUpperCase());
       if (!room) return err(ws, 'Room not found. Check the code.');
       if (room.state === 'done') return err(ws, 'This game is over.');
-      if (room.players.size >= MAX_PLAYERS) return err(ws, 'The room is full.');
+      if (room.players.size >= MAX_PLAYERS || active(room).length >= room.max) return err(ws, 'The room is full.');
       const pl = addPlayer(room, ws, clean(m.name) || 'Player', false); attach(ws, room, pl);
       send(ws, { t: 'joined', id: pl.id, token: pl.token, host: false, spec: false, room: snapshot(room, pl) });
       sendLive(room, pl);
@@ -179,7 +181,7 @@ function onMsg(ws, m) {
       if (!isHost || r.state === 'playing') return;
       r.state = 'playing'; r.round++; r.seed = r.code + '-' + r.round + '-' + crypto.randomBytes(3).toString('hex'); resetRound(r);
       if (r.mode === 'live') { if (r.live) clearTimeout(r.live.timer); r.live = { phase: 'ready', i: -1, n: r.n, count: 0 }; }
-      for (const x of r.players.values()) send(x.ws, { t: 'start', round: r.round, seed: snapshot(r, x).seed, theme: r.theme, sub: r.sub, mode: r.mode, n: r.n });
+      for (const x of r.players.values()) send(x.ws, { t: 'start', round: r.round, seed: snapshot(r, x).seed, theme: r.theme, sub: r.sub, subs: r.subs, mode: r.mode, n: r.n });
       return bcast(r);
     case 'lq': {
       if (!isHost || r.mode !== 'live' || r.state !== 'playing') return;
@@ -218,10 +220,10 @@ function onMsg(ws, m) {
       if (isHost && r.mode === 'live') reveal(r); return;
     case 'progress':
       if (!p || p.spec || r.state !== 'playing') return;
-      p.i = int(m.i, 20); p.mi = int(m.mi, 420); p.late = int(m.late, 500); p.sq = cleanSq(m.sq); return bcast(r);
+      p.i = int(m.i, 40); p.mi = int(m.mi, 420); p.late = int(m.late, 1000); p.sq = cleanSq(m.sq); return bcast(r);
     case 'finish':
       if (!p || p.spec || r.state !== 'playing') return;
-      p.mi = int(m.mi, 420); p.late = int(m.late, 500); p.sq = cleanSq(m.sq); p.done = true;
+      p.mi = int(m.mi, 420); p.late = int(m.late, 1000); p.sq = cleanSq(m.sq); p.done = true;
       if ([...r.players.values()].filter(x => !x.spec).every(x => x.done)) r.state = 'done';
       return bcast(r);
     case 'again':
