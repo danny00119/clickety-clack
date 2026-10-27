@@ -303,6 +303,9 @@ div.lopt{cursor:default}
 .card.shake{animation:shake .4s}.card.pop{animation:pop .35s}
 .conf{position:fixed;top:-16px;width:9px;height:14px;pointer-events:none;z-index:9;animation:fall 2.4s ease-in forwards}
 
+.legal{max-width:880px;margin:0 auto;padding:0 20px 34px;text-align:center;color:var(--mute);font-size:.8rem;line-height:1.5}
+.legal p{margin:.2em 0}
+
 @media(max-width:640px){
  main{padding:20px 14px 46px}
  .menu-grid{grid-template-columns:1fr;gap:18px}
@@ -320,6 +323,7 @@ div.lopt{cursor:default}
 <body>
 <div class="sndw"><button id="snd" class="snd"></button><div class="sndpop"><label for="gvol"><span>Volume</span><output id="gvolo"></output></label><input type="range" id="gvol" min="0" max="100" step="5"><button id="gmute" class="chip"></button></div></div>
 <main id="app"></main>
+<footer class="legal"><p>© 2026 Yordan Rusev. All rights reserved.</p><p>This game and its original content may not be copied, redistributed, or commercially exploited without permission, except as permitted by applicable law.</p></footer>
 <script>
 const ROUTE=[["London",0],["Peterborough",76],["Doncaster",156],["York",188],["Darlington",232],["Newcastle",268],["Berwick-upon-Tweed",336],["Edinburgh",393]];
 const TOTAL=393,MAXMI=60,MAXDELAY=20,LV={A1:45,A2:60,B1:75};

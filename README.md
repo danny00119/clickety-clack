@@ -84,3 +84,8 @@ Use HTTPS in production: phones and browsers only allow some features (clipboard
 - `public/index.html`: the whole game
 - `vocabulary_a1_b1.md`: Cambridge-style A1–B1 vocabulary study resource
 - `Dockerfile`, `render.yaml`: deployment
+
+## Copyright
+© 2026 Yordan Rusev. All rights reserved.
+
+This game and its original content may not be copied, redistributed, or commercially exploited without permission, except as permitted by applicable law.
