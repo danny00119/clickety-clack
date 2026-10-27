@@ -19,31 +19,120 @@ const int = (v, max) => Math.max(0, Math.min(max, Math.floor(Number(v)) || 0));
 const cleanSq = v => String(v || '').replace(/[^gmn]/g, '').slice(0, 12);
 const rid = () => crypto.randomBytes(6).toString('hex');
 
-function snapshot(r) {
-  const host = r.players.get(r.hostId);
+// Live quiz (Kahoot-style): the host's browser sends one question at a time (with its answer),
+// the server keeps the clock, scores every answer and sends players the question without the answer.
+const LIVE_TYPES = ['mc', 'multi', 'type', 'num', 'order'], LEAD = 3000;
+const norm = s => String(s).toLowerCase().trim().replace(/[^a-z0-9 ]/g, '').replace(/\s+/g, ' ');
+function lev(a, b) { const d = []; for (let i = 0; i <= a.length; i++) { d[i] = [i]; for (let j = 1; j <= b.length; j++) d[i][j] = i ? 0 : j; } for (let i = 1; i <= a.length; i++) for (let j = 1; j <= b.length; j++) d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1)); return d[a.length][b.length]; }
+// Same rules as score() in public/index.html.
+function scoreAns(q, a) {
+  if (q.t === 'mc') return a === q.a ? 1 : 0;
+  if (q.t === 'multi') { const r = a.filter(x => q.a.includes(x)).length, w = a.length - r; return Math.max(0, (r - w) / q.a.length); }
+  if (q.t === 'type') { const x = norm(a); return q.a.some(c => { const n = norm(c); return x === n || (n.length >= 4 && x && lev(x, n) <= 1); }) ? 1 : 0; }
+  if (q.t === 'num') { const v = parseFloat(a); return isNaN(v) ? 0 : Math.max(0, 1 - Math.abs(v - q.a) / q.s); }
+  const p = a.map(s => s.toLowerCase());
+  return Math.max(...[q.a, ...(q.alt || [])].map(v => v.filter((w, i) => p[i] === w.toLowerCase()).length / v.length));
+}
+const isStr = (v, n) => typeof v === 'string' && v.length > 0 && v.length <= n;
+const strArr = (v, max, n) => Array.isArray(v) && v.length > 0 && v.length <= max && v.every(x => isStr(x, n));
+const isIdx = (v, len) => Number.isInteger(v) && v >= 0 && v < len;
+function cleanQ(q) {
+  if (!q || !LIVE_TYPES.includes(q.t) || !isStr(q.q, 300) || !['A1', 'A2', 'B1'].includes(q.lv)) return null;
+  const o = { t: q.t, lv: q.lv, q: q.q, sub: typeof q.sub === 'string' && /^[a-z]-[a-z]+$/.test(q.sub) ? q.sub : null };
+  if (q.t === 'mc' || q.t === 'multi') {
+    if (!strArr(q.o, 6, 120)) return null; o.o = q.o;
+    if (q.t === 'mc') { if (!isIdx(q.a, q.o.length)) return null; o.a = q.a; }
+    else { if (!Array.isArray(q.a) || !q.a.length || !q.a.every(i => isIdx(i, q.o.length))) return null; o.a = [...new Set(q.a)]; }
+  } else if (q.t === 'type') { if (!strArr(q.a, 6, 60)) return null; o.a = q.a; }
+  else if (q.t === 'num') { if (!Number.isFinite(q.a) || !Number.isFinite(q.s) || q.s <= 0) return null; o.a = q.a; o.s = q.s; }
+  else {
+    if (!strArr(q.a, 12, 30)) return null; o.a = q.a;
+    if (q.alt != null) { if (!Array.isArray(q.alt) || q.alt.length > 3 || !q.alt.every(v => strArr(v, 12, 30) && v.length === q.a.length)) return null; o.alt = q.alt; }
+  }
+  return o;
+}
+function shuffled(a) { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = crypto.randomInt(i + 1); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+const publicQ = q => ({ t: q.t, lv: q.lv, q: q.q, sub: q.sub, o: q.o, words: q.t === 'order' ? shuffled(q.a) : undefined });
+const correctText = q => q.t === 'mc' ? q.o[q.a] : q.t === 'multi' ? q.a.map(i => q.o[i]).join(', ') : q.t === 'num' ? String(q.a) : q.t === 'order' ? q.a.join(' ') : q.a[0];
+function cleanAns(q, a) {
+  if (q.t === 'mc') return isIdx(a, q.o.length) ? a : null;
+  if (q.t === 'multi') return Array.isArray(a) ? [...new Set(a.filter(i => isIdx(i, q.o.length)))] : null;
+  if (q.t === 'type') return typeof a === 'string' ? a.slice(0, 100) : null;
+  if (q.t === 'num') return typeof a === 'number' || typeof a === 'string' ? String(a).slice(0, 20) : null;
+  return Array.isArray(a) && a.length <= 20 && a.every(s => typeof s === 'string') ? a.map(s => s.slice(0, 30)) : null;
+}
+const active = r => [...r.players.values()].filter(p => !p.spec);
+const liveBoard = r => active(r).map(p => ({ id: p.id, name: p.name, score: p.score, right: p.right, online: !!p.ws })).sort((a, b) => b.score - a.score || b.right - a.right);
+function sendQuestion(r, p) {
+  const L = r.live, now = Date.now();
+  send(p.ws, { t: 'lq', i: L.i, n: L.n, q: L.pub, time: L.time, wait: Math.max(0, L.startAt - now), left: Math.max(0, L.endAt - now), answered: !!p.ans, count: L.count, of: active(r).length });
+}
+function sendReveal(r, p) {
+  const L = r.live, k = L.board.findIndex(x => x.id === p.id), a = p.ans || { sc: 0, pts: 0, bonus: 0, none: true };
+  send(p.ws, { t: 'lreveal', i: L.i, n: L.n, q: L.pub, correct: { text: correctText(L.q), a: L.q.t === 'mc' || L.q.t === 'multi' ? L.q.a : null }, dist: L.dist, count: L.count, of: active(r).length, top: L.board.slice(0, 5),
+    me: k < 0 ? null : { sc: a.sc, pts: a.pts, bonus: a.bonus, none: !!a.none, score: p.score, right: p.right, streak: p.streak, rank: k + 1, of: L.board.length } });
+}
+const sendFinal = (r, p) => send(p.ws, { t: 'lfinal', board: r.live.board, n: r.live.n });
+function sendLive(r, p) {
+  const L = r.live; if (r.mode !== 'live' || !L) return;
+  if (L.phase === 'question') sendQuestion(r, p); else if (L.phase === 'reveal') sendReveal(r, p); else if (L.phase === 'end') sendFinal(r, p);
+}
+function reveal(r) {
+  const L = r.live; if (!L || L.phase !== 'question') return;
+  clearTimeout(L.timer); L.phase = 'reveal';
+  const dist = L.q.o ? L.q.o.map(() => 0) : null;
+  for (const p of active(r)) {
+    if (!p.ans) { p.streak = 0; p.ans = { sc: 0, pts: 0, bonus: 0, none: true }; }
+    else if (dist && p.ans.a != null) (L.q.t === 'mc' ? [p.ans.a] : p.ans.a).forEach(i => { dist[i]++; });
+  }
+  L.dist = dist; L.board = liveBoard(r);
+  for (const p of r.players.values()) sendReveal(r, p);
+  bcast(r);
+}
+function endLive(r) {
+  const L = r.live; if (!L) return;
+  clearTimeout(L.timer); L.phase = 'end'; L.board = liveBoard(r); r.state = 'done';
+  for (const p of r.players.values()) sendFinal(r, p);
+  bcast(r);
+}
+// Close the question early once every connected player has answered.
+function checkAll(r) {
+  const L = r.live; if (r.mode !== 'live' || !L || L.phase !== 'question') return;
+  const on = active(r).filter(p => p.ws);
+  if (on.length && on.every(p => p.ans)) reveal(r);
+}
+
+function snapshot(r, viewer) {
+  const host = r.players.get(r.hostId), live = r.mode === 'live';
   return {
-    code: r.code, state: r.state, round: r.round, theme: r.theme, sub: r.sub, seed: r.seed, hostName: host ? host.name : '',
-    players: [...r.players.values()].filter(p => !p.spec).map(p => ({ id: p.id, name: p.name, host: p.id === r.hostId, online: !!p.ws, mi: p.mi, late: p.late, sq: p.sq, done: p.done, i: p.i }))
-      .sort((a, b) => b.mi - a.mi || a.late - b.late || Number(b.done) - Number(a.done))
+    code: r.code, state: r.state, round: r.round, theme: r.theme, sub: r.sub, mode: r.mode, n: r.n, hostId: r.hostId, hostName: host ? host.name : '',
+    // In a live quiz only the host gets the seed: it decides which questions (and answers) come next.
+    seed: !live || (viewer && viewer.id === r.hostId) ? r.seed : '',
+    live: live && r.live ? { phase: r.live.phase, i: r.live.i, n: r.live.n } : null,
+    players: active(r).map(p => ({ id: p.id, name: p.name, host: p.id === r.hostId, online: !!p.ws, mi: p.mi, late: p.late, sq: p.sq, done: p.done, i: p.i, score: p.score, right: p.right }))
+      .sort(live ? (a, b) => b.score - a.score || b.right - a.right : (a, b) => b.mi - a.mi || a.late - b.late || Number(b.done) - Number(a.done))
   };
 }
 const send = (ws, o) => { if (ws && ws.readyState === 1) ws.send(JSON.stringify(o)); };
 const err = (ws, msg) => send(ws, { t: 'err', msg });
 function toAll(r, o) { const m = JSON.stringify(o); r.touched = Date.now(); for (const p of r.players.values()) if (p.ws && p.ws.readyState === 1) p.ws.send(m); }
-const bcast = r => toAll(r, { t: 'room', room: snapshot(r) });
+function bcast(r) { r.touched = Date.now(); for (const p of r.players.values()) send(p.ws, { t: 'room', room: snapshot(r, p) }); }
 function addPlayer(r, ws, name, spec) {
   let n = name, k = 2; const names = new Set([...r.players.values()].map(p => p.name));
   while (names.has(n)) n = name + ' ' + k++;
-  const p = { id: rid(), token: rid() + rid(), name: n, ws, spec: !!spec, mi: 0, late: 0, sq: '', i: 0, done: false };
+  const p = { id: rid(), token: rid() + rid(), name: n, ws, spec: !!spec, mi: 0, late: 0, sq: '', i: 0, done: false, score: 0, streak: 0, right: 0, ans: null };
   r.players.set(p.id, p); return p;
 }
 const attach = (ws, room, p) => { ws.ctx = { room, pid: p.id }; p.ws = ws; };
-const resetRound = r => { for (const q of r.players.values()) { q.mi = 0; q.late = 0; q.sq = ''; q.i = 0; q.done = false; } };
+const resetRound = r => { for (const q of r.players.values()) { q.mi = 0; q.late = 0; q.sq = ''; q.i = 0; q.done = false; q.score = 0; q.streak = 0; q.right = 0; q.ans = null; } };
+const dropRoom = r => { if (r.live) clearTimeout(r.live.timer); rooms.delete(r.code); };
 function removePlayer(r, p) {
   r.players.delete(p.id);
   if (p.ws) { p.ws.ctx = null; }
-  if (!r.players.size) { rooms.delete(r.code); return; }
+  if (!r.players.size) { dropRoom(r); return; }
   if (r.hostId === p.id) r.hostId = [...r.players.values()][0].id;
+  if (r.live && r.live.phase === 'question') r.live.count = active(r).filter(x => x.ans).length;
+  checkAll(r);
   bcast(r);
 }
 
@@ -55,11 +144,13 @@ function onMsg(ws, m) {
       if (rooms.size >= MAX_ROOMS) return err(ws, 'The server is busy. Please try again later.');
       const theme = typeof m.theme === 'string' && m.theme.length === 1 && 'MGVEW'.includes(m.theme) ? m.theme : 'M';
       const sub = typeof m.sub === 'string' && /^[a-z]-[a-z]+$/.test(m.sub) ? m.sub : null;
-      const room = { code: code4(), hostId: null, state: 'lobby', round: 0, theme, sub, seed: '', players: new Map(), touched: Date.now() };
+      const mode = m.mode === 'live' ? 'live' : 'race', n = Math.max(3, Math.min(30, int(m.n, 30) || 10));
+      const room = { code: code4(), hostId: null, state: 'lobby', round: 0, theme, sub, mode, n, live: null, seed: '', players: new Map(), touched: Date.now() };
       rooms.set(room.code, room);
-      const pl = addPlayer(room, ws, clean(m.name) || 'Host', m.play === false);
+      // In a live quiz the host presents the questions and does not play.
+      const pl = addPlayer(room, ws, clean(m.name) || 'Host', mode === 'live' || m.play === false);
       room.hostId = pl.id; attach(ws, room, pl);
-      return send(ws, { t: 'joined', id: pl.id, token: pl.token, host: true, spec: pl.spec, room: snapshot(room) });
+      return send(ws, { t: 'joined', id: pl.id, token: pl.token, host: true, spec: pl.spec, room: snapshot(room, pl) });
     }
     case 'join': {
       if (r) return;
@@ -68,7 +159,8 @@ function onMsg(ws, m) {
       if (room.state === 'done') return err(ws, 'This game is over.');
       if (room.players.size >= MAX_PLAYERS) return err(ws, 'The room is full.');
       const pl = addPlayer(room, ws, clean(m.name) || 'Player', false); attach(ws, room, pl);
-      send(ws, { t: 'joined', id: pl.id, token: pl.token, host: false, spec: false, room: snapshot(room) });
+      send(ws, { t: 'joined', id: pl.id, token: pl.token, host: false, spec: false, room: snapshot(room, pl) });
+      sendLive(room, pl);
       return bcast(room);
     }
     case 'rejoin': {
@@ -77,13 +169,49 @@ function onMsg(ws, m) {
       if (!pl || pl.token !== m.token) return err(ws, 'Your game is no longer available.');
       if (pl.ws && pl.ws !== ws) { const old = pl.ws; old.ctx = null; try { old.close(); } catch (e) {} }
       attach(ws, room, pl);
-      send(ws, { t: 'joined', id: pl.id, token: pl.token, host: pl.id === room.hostId, spec: pl.spec, room: snapshot(room) });
+      send(ws, { t: 'joined', id: pl.id, token: pl.token, host: pl.id === room.hostId, spec: pl.spec, room: snapshot(room, pl) });
+      sendLive(room, pl);
       return bcast(room);
     }
     case 'start':
       if (!isHost || r.state === 'playing') return;
       r.state = 'playing'; r.round++; r.seed = r.code + '-' + r.round + '-' + crypto.randomBytes(3).toString('hex'); resetRound(r);
-      toAll(r, { t: 'start', round: r.round, seed: r.seed, theme: r.theme, sub: r.sub }); return bcast(r);
+      if (r.mode === 'live') { if (r.live) clearTimeout(r.live.timer); r.live = { phase: 'ready', i: -1, n: r.n, count: 0 }; }
+      for (const x of r.players.values()) send(x.ws, { t: 'start', round: r.round, seed: snapshot(r, x).seed, theme: r.theme, sub: r.sub, mode: r.mode, n: r.n });
+      return bcast(r);
+    case 'lq': {
+      if (!isHost || r.mode !== 'live' || r.state !== 'playing') return;
+      const L = r.live, i = Number(m.i);
+      if (L.phase === 'question' || L.phase === 'end' || i !== L.i + 1) return;
+      if (i === 0) L.n = Math.max(1, Math.min(r.n, int(m.n, 30)));
+      if (i >= L.n) return;
+      const q = cleanQ(m.q);
+      if (!q) return err(ws, 'This question could not be sent.');
+      const time = Math.max(5, Math.min(60, int(m.time, 60) || 20)), now = Date.now();
+      Object.assign(L, { i, q, pub: publicQ(q), time, phase: 'question', count: 0, startAt: now + LEAD, endAt: now + LEAD + time * 1000 });
+      for (const x of r.players.values()) x.ans = null;
+      L.timer = setTimeout(() => { if (rooms.get(r.code) === r) reveal(r); }, LEAD + time * 1000 + 300);
+      for (const x of r.players.values()) sendQuestion(r, x);
+      return bcast(r);
+    }
+    case 'ans': {
+      const L = r && r.live;
+      if (!p || p.spec || r.mode !== 'live' || !L || L.phase !== 'question' || m.i !== L.i || p.ans) return;
+      const now = Date.now();
+      if (now < L.startAt - 500 || now > L.endAt + 1000) return;
+      const a = cleanAns(L.q, m.a), sc = a == null ? 0 : scoreAns(L.q, a);
+      const used = Math.min(1, Math.max(0, (now - L.startAt) / (L.time * 1000)));
+      const pts = Math.round(sc * (1000 - 500 * used));
+      p.streak = sc >= 0.8 ? p.streak + 1 : 0;
+      const bonus = p.streak >= 2 ? Math.min(500, (p.streak - 1) * 100) : 0;
+      if (sc >= 0.8) p.right++;
+      p.score += pts + bonus; p.ans = { a, sc, pts, bonus }; L.count++;
+      send(ws, { t: 'lack', i: L.i });
+      toAll(r, { t: 'lcount', i: L.i, count: L.count, of: active(r).length });
+      return checkAll(r);
+    }
+    case 'skip':
+      if (isHost && r.mode === 'live') reveal(r); return;
     case 'progress':
       if (!p || p.spec || r.state !== 'playing') return;
       p.i = int(m.i, 20); p.mi = int(m.mi, 420); p.late = int(m.late, 500); p.sq = cleanSq(m.sq); return bcast(r);
@@ -94,9 +222,13 @@ function onMsg(ws, m) {
       return bcast(r);
     case 'again':
       if (!isHost) return;
-      r.state = 'lobby'; resetRound(r); return toAll(r, { t: 'lobby', room: snapshot(r) });
+      if (r.live) clearTimeout(r.live.timer);
+      r.state = 'lobby'; r.live = null; resetRound(r);
+      for (const x of r.players.values()) send(x.ws, { t: 'lobby', room: snapshot(r, x) });
+      return;
     case 'end':
       if (!isHost) return;
+      if (r.mode === 'live' && r.live && r.live.phase !== 'end') return endLive(r);
       r.state = 'done'; return bcast(r);
     case 'kick': {
       if (!isHost) return;
@@ -163,14 +295,14 @@ wss.on('connection', ws => {
   ws.on('close', () => {
     const c = ws.ctx; if (!c) return;
     const p = c.room.players.get(c.pid);
-    if (p && p.ws === ws) { p.ws = null; if (rooms.has(c.room.code)) bcast(c.room); }
+    if (p && p.ws === ws) { p.ws = null; if (rooms.has(c.room.code)) { checkAll(c.room); bcast(c.room); } }
   });
   ws.on('error', () => {});
 });
 setInterval(() => { for (const ws of wss.clients) { if (!ws.alive) { ws.terminate(); continue; } ws.alive = false; try { ws.ping(); } catch (e) {} } }, 30000).unref();
 setInterval(() => {
   const now = Date.now();
-  for (const [k, r] of rooms) { const online = [...r.players.values()].some(p => p.ws); if (now - r.touched > (online ? 6 * 3600e3 : 20 * 60e3)) rooms.delete(k); }
+  for (const [k, r] of rooms) { const online = [...r.players.values()].some(p => p.ws); if (now - r.touched > (online ? 6 * 3600e3 : 20 * 60e3)) dropRoom(r); }
 }, 60000).unref();
 
 server.listen(PORT, () => console.log('Clickety-Clack listening on :' + PORT));

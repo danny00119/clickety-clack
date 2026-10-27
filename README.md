@@ -2,7 +2,7 @@
 
 A quiz game for English learners (A1–B1). Players answer 7 questions and "drive" a train from London to Edinburgh.
 Includes mini lessons, text-to-speech, a results report and a shareable result image.
-This version adds **live multiplayer rooms**: the host creates a room, players scan a QR code, type a name and race on a live leaderboard.
+This version adds **live multiplayer rooms**: the host creates a room, players scan a QR code and type a name. Play a **live quiz** (one question at a time on the host's screen, fast answers score more, podium at the end) or a **train race** on a live leaderboard.
 
 ## Run locally
 
@@ -47,15 +47,27 @@ Caddy: `yourdomain.com { reverse_proxy 127.0.0.1:3000 }`.
 Use HTTPS in production: phones and browsers only allow some features (clipboard, secure WebSocket) on secure pages.
 
 ## How multiplayer works
-- `Host a game` → choose a topic or subtopic → a 4-letter room code and QR code appear.
+- `Host a game` → choose a game type, a topic or subtopic → a 4-letter room code and QR code appear.
 - Players scan the QR code (or open the link / type the code), enter a name and wait in the lobby.
-- The host presses **Start**. Everyone gets the same questions (the server sends one shared random seed), and the leaderboard updates after every answer.
-- The host can remove players, play again, or end the game. The host can also host without playing (teacher view).
+- The host can remove players, play again, or end the game.
 - If a player refreshes the page or loses the connection, the browser reconnects to the same room automatically.
 - Rooms are deleted after 20 minutes with nobody online, or after 6 hours.
 
+### ⚡ Live quiz (game-show style)
+- The host shows their screen to the class (projector or shared screen). The host presents and does not play. Choose 5, 10, 15 or 20 questions.
+- Everyone gets the **same question at the same time**: a 3-second “get ready”, then the timer. Players answer on their phones with big coloured buttons (or type / put words in order).
+- The question ends when everyone has answered or the time is up. The host can also press **Skip**.
+- After each question: the correct answer, how many players chose each option, and the top 5. Each player sees their own result and place.
+- **Points:** up to 1,000 per question, more for faster answers (half points for an answer in the last second). From the second correct answer in a row there is a streak bonus (+100, +200 … up to +500).
+- At the end: a podium for the top 3 and the full scores. **Play again** keeps everybody in the room.
+- Wrong answers are added to each player's “Fix my mistakes” list.
+
+### 🚂 Train race
+- Everybody gets the same 7 questions (the server sends one shared random seed) and plays at their own speed. The leaderboard updates after every answer.
+- The host can play too, or host without playing (teacher view).
+
 ## Good to know
-- **Trust model:** scores are calculated in each player's browser and sent to the server, which checks only the format and limits. This is fine for a classroom; it is not cheat-proof for competitions.
+- **Trust model:** in the live quiz the server keeps the time and scores every answer; players never receive the correct answer before the results. In the train race, scores are calculated in each player's browser and sent to the server, which checks only the format and limits. This is fine for a classroom; the train race is not cheat-proof for competitions.
 - **Privacy:** no accounts, no database. Names exist only in memory while a room is open. Progress and the "my mistakes" list stay in each player's own browser.
 - **Questions:** all questions and lessons are in `public/index.html` (search for `const LS=` and the `mc(`, `mu(`, `ty(`, `nu(`, `od(` lines). After editing, restart the server.
 - **Limits:** 80 players per room, 300 rooms, small messages only, simple rate limiting per connection.

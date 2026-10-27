@@ -177,6 +177,35 @@ button.main{background:var(--yel);color:var(--onyel)}
 .pbar{height:8px;background:var(--line);border-radius:4px;overflow:hidden}.pbar i{display:block;height:100%;background:var(--good)}
 .mi{text-align:right;font-weight:700}
 @media(max-width:480px){.brow{grid-template-columns:24px 1fr 56px 56px}.brow .sq{display:none}}
+.live-top{display:flex;gap:6px;align-items:center;flex-wrap:wrap;font-weight:700;padding-right:52px}
+.lcount{margin-left:auto;color:var(--mute);font-size:.95rem}
+.ticket.live h2{font-size:1.6rem;min-height:64px}
+.ltime{float:right;margin:0 0 8px 12px;width:64px;height:64px;border-radius:50%;border:3px solid var(--edge);display:grid;place-items:center;font:800 1.9rem/1 "Barlow Condensed","Arial Narrow",sans-serif;background:var(--yel);color:var(--onyel)}
+.lopts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:12px 0;clear:both}
+.lopt{display:flex;align-items:center;gap:12px;min-height:76px;padding:12px 14px;border-radius:14px;border:2px solid var(--edge);background:var(--c);color:#fff;font-weight:700;font-size:1.15rem;text-align:left;box-shadow:0 4px 0 var(--edge)}
+.lopt .shp{font-size:1.5rem;flex:none;width:1.4em;text-align:center}
+.lopt.on{outline:4px solid var(--ink);outline-offset:3px}
+.lword{border:2px solid var(--edge);border-radius:12px;background:var(--bg);font-weight:700}
+.lready{clear:both;font:800 2.2rem/1.2 "Barlow Condensed","Arial Narrow",sans-serif;text-align:center;margin:22px 0;animation:pop .7s infinite alternate}
+.lwait{clear:both;text-align:center;padding:18px 8px}.lwait b{display:block;font:800 2.2rem/1.15 "Barlow Condensed","Arial Narrow",sans-serif}
+.lres{text-align:center}.lres.good{background:color-mix(in srgb,var(--good) 20%,var(--card))}.lres.mid{background:color-mix(in srgb,var(--mid) 22%,var(--card))}.lres.bad{background:color-mix(in srgb,var(--bad) 18%,var(--card))}
+.lbig{font:800 2.5rem/1.1 "Barlow Condensed","Arial Narrow",sans-serif}
+.lpts{font-size:1.3rem;font-weight:700}
+.ldist{display:grid;gap:10px;margin-top:12px}
+.ldrow{display:grid;grid-template-columns:1.6em 1fr 2.4em;gap:8px;align-items:center}.ldrow b{text-align:right;font-size:1.2rem}
+.ldrow .shp{font-size:1.3rem;text-align:center}.ldrow.ok .ldl{font-weight:800}.ldrow:not(.ok){opacity:.65}
+.ldbar{display:block;height:12px;margin-top:4px;min-width:4px;border-radius:6px;background:var(--c);transition:width .6s ease}
+.lboard{list-style:none;padding:0;margin:0}
+.lboard li{display:flex;gap:10px;align-items:center;padding:8px 12px;margin:6px 0;border:2px solid var(--line);border-radius:12px;font-weight:600}
+.lboard li.me{background:var(--yel);color:var(--onyel);border-color:var(--edge)}
+.lboard .rk{width:1.6em;font-weight:800}.lboard .sc{margin-left:auto;font-weight:800}
+.podium{display:flex;justify-content:center;align-items:flex-end;gap:10px;margin:22px 0 8px}
+.pod{flex:1;min-width:0;max-width:180px;text-align:center}
+.pname{font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-bottom:6px}
+.pblock{display:flex;flex-direction:column;justify-content:center;border:2px solid var(--edge);border-radius:14px 14px 4px 4px;box-shadow:0 4px 0 var(--edge);animation:rise .7s both}
+.pblock b{font:800 2.8rem/1 "Barlow Condensed","Arial Narrow",sans-serif}
+.p1 .pblock{height:160px;background:var(--yel);color:var(--onyel)}.p2 .pblock{height:115px;background:color-mix(in srgb,var(--line) 75%,var(--card));animation-delay:.25s}.p3 .pblock{height:85px;background:color-mix(in srgb,var(--mid) 35%,var(--card));animation-delay:.5s}
+@media(max-width:480px){.lopts{grid-template-columns:1fr}.lopt{min-height:58px}.ticket.live h2{font-size:1.35rem}}
 </style>
 </head>
 <body>
@@ -1162,15 +1191,23 @@ function mpMsg(m){
   SSX.set({code:MP.code,id:MP.id,token:MP.token});
   if(location.hash)try{history.replaceState(null,'',location.pathname+location.search)}catch(e){}
   const me=m.room.players.find(p=>p.id===m.id);
+  if(m.room.mode==='live'){MP.seed=m.room.seed;MP.round=m.room.round;if(m.room.state==='lobby')mpLobby();else{liveHold('Joining the game…');if(MP.host&&m.room.live&&m.room.live.phase==='ready')liveSend(0)}return}
   if(m.room.state==='lobby')mpLobby();
   else if(MP.spec)mpHostBoard();
   else if(me&&me.done&&!(S&&S.mp))mpDoneScreen();
   else if(m.room.state==='playing'&&!(S&&S.mp))mpBegin(m.room);
   else mpRefresh();
   return}
- if(m.t==='room'){if(!MP||MP.left)return;MP.room=m.room;mpRefresh();return}
+ if(m.t==='room'){if(!MP||MP.left)return;const was=MP.host;MP.room=m.room;MP.host=m.room.hostId===MP.id;if(m.room.seed)MP.seed=m.room.seed;
+  if(!was&&MP.host&&m.room.live&&m.room.live.phase==='ready')liveSend(0);mpRefresh();return}
+ if(m.t==='start'&&m.mode==='live'){if(!MP||!MP.room||MP.round===m.round)return;MP.round=m.round;MP.seed=m.seed;LIVE={};Object.assign(MP.room,{state:'playing',round:m.round,n:m.n});liveHold('Get ready! The first question is coming…');if(MP.host)liveSend(0);return}
+ if(m.t==='lq'){if(MP)liveQuestion(m);return}
+ if(m.t==='lack'){if(LIVE.cur&&LIVE.cur.i===m.i&&LIVE.mine===undefined){LIVE.mine=null;liveDraw()}return}
+ if(m.t==='lcount'){if(LIVE.cur&&LIVE.cur.i===m.i){LIVE.cur.count=m.count;LIVE.cur.of=m.of;const e=$('#lc');if(e)e.textContent=m.count+' / '+m.of+' answered'}return}
+ if(m.t==='lreveal'){if(MP)liveReveal(m);return}
+ if(m.t==='lfinal'){if(MP)livePodium(m);return}
  if(m.t==='start'){if(!MP||!MP.room||MP.round===m.round)return;Object.assign(MP.room,{state:'playing',round:m.round,seed:m.seed,theme:m.theme,sub:m.sub});MP.spec?mpHostBoard():mpBegin(MP.room);return}
- if(m.t==='lobby'){if(!MP)return;MP.room=m.room;MP.round=null;clearInterval(timer);S=null;mpLobby();return}
+ if(m.t==='lobby'){if(!MP)return;MP.room=m.room;MP.round=null;LIVE={};clearInterval(timer);S=null;mpLobby();return}
  if(m.t==='kicked'){if(MP){MP.left=true;try{MP.ws.close()}catch(e){}}MP=null;SSX.set(null);clearInterval(timer);S=null;menu();return}
  if(m.t==='err'){const had=MP&&MP.id;if(!had){try{MP&&MP.ws&&MP.ws.close()}catch(e){}MP=null;SSX.set(null)}const e=$('#merr');if(e)e.textContent=m.msg;else if(!had)menu();return}
 }
@@ -1183,16 +1220,19 @@ function mpRefresh(){
  if($('#pl')){$('#pc').textContent='('+r.players.length+')';
   $('#pl').innerHTML=r.players.map(p=>`<li class="${p.online?'':'off'}">${p.host?'👑 ':''}${esc(p.name)}${p.id===MP.id?' (you)':''}${MP.host&&p.id!==MP.id?` <button class="chip lis" data-kick="${p.id}" aria-label="Remove ${esc(p.name)}">✕</button>`:''}</li>`).join('')||'<li class="mute">Nobody yet…</li>';
   app.querySelectorAll('[data-kick]').forEach(b=>b.onclick=()=>mpSend({t:'kick',id:b.dataset.kick}))}
+ if($('#st')&&r.mode==='live')$('#st').disabled=!r.players.length;
  if($('#mb'))$('#mb').innerHTML=boardRows(r,5);
  if($('#fbd'))mpFinalDraw();
  if($('#hb'))mpHostDraw();
 }
-function mpTopic(r){return r.sub?SUBLABEL[r.sub]:(r.theme==='M'?'Mixed topics':TN[r.theme])}
+function mpTopic(r){return (r.sub?SUBLABEL[r.sub]:(r.theme==='M'?'Mixed topics':TN[r.theme]))+(r.mode==='live'?' · ⚡ live quiz, '+r.n+' questions':'')}
 function mpHostScreen(){
  const opts='<option value="M">🎲 Mixed topics</option>'+GROUPS.map(g=>`<optgroup label="${g.name}"><option value="${g.k}">All ${g.name.toLowerCase()}</option>${g.subs.filter(s=>s[0]!=='#').map(s=>`<option value="${s}">${SUBLABEL[s]}</option>`).join('')}</optgroup>`).join('');
- app.innerHTML=`<div class="section-kicker">🎮 Multiplayer</div><h1>Host a game</h1><div class="card"><label for="mt">Topic</label><select id="mt">${opts}</select><label for="mn2" style="display:block;margin-top:12px">Your name</label><input id="mn2" maxlength="24" value="${esc(store('cc_name')||'')}" placeholder="Teacher or player name"><label style="display:flex;gap:8px;align-items:center;margin-top:12px"><input type="checkbox" id="mpl" checked style="width:auto;min-height:0"> I want to play too</label><p class="mute" id="merr" role="alert"></p><div class="row"><button class="main" id="mgo">Create room →</button><button id="mbk">Back</button></div></div>`;
+ app.innerHTML=`<div class="section-kicker">🎮 Multiplayer</div><h1>Host a game</h1><div class="card"><label for="mm">Game type</label><select id="mm"><option value="live">⚡ Live quiz: one question at a time on your screen</option><option value="race">🚂 Train race: everyone plays at their own speed</option></select><p class="mute" id="mmd"></p><label for="mt" style="display:block;margin-top:12px">Topic</label><select id="mt">${opts}</select><div id="mqw"><label for="mq" style="display:block;margin-top:12px">Number of questions</label><select id="mq"><option>5</option><option selected>10</option><option>15</option><option>20</option></select></div><label for="mn2" style="display:block;margin-top:12px">Your name</label><input id="mn2" maxlength="24" value="${esc(store('cc_name')||'')}" placeholder="Teacher or player name"><label id="mplw" style="display:flex;gap:8px;align-items:center;margin-top:12px"><input type="checkbox" id="mpl" checked style="width:auto;min-height:0"> I want to play too</label><p class="mute" id="merr" role="alert"></p><div class="row"><button class="main" id="mgo">Create room →</button><button id="mbk">Back</button></div></div>`;
+ const md=()=>{const live=$('#mm').value==='live';$('#mqw').hidden=!live;$('#mplw').style.display=live?'none':'flex';$('#mmd').textContent=live?'Show your screen to the class. Everybody answers the same question at the same time on their phone. Fast correct answers get more points.':'Everybody gets the same 7 questions and drives their train at their own speed. The leaderboard updates live.'};
+ $('#mm').onchange=md;md();
  $('#mbk').onclick=menu;
- $('#mgo').onclick=()=>{const v=$('#mt').value,n=$('#mn2').value.trim(),sub=v.includes('-')?v:null,theme=sub?sub[0].toUpperCase():v;store('cc_name',n);$('#merr').textContent='Connecting…';mpOpen({t:'create',name:n,theme,sub,play:$('#mpl').checked})};
+ $('#mgo').onclick=()=>{const v=$('#mt').value,n=$('#mn2').value.trim(),sub=v.includes('-')?v:null,theme=sub?sub[0].toUpperCase():v;store('cc_name',n);$('#merr').textContent='Connecting…';mpOpen({t:'create',name:n,theme,sub,mode:$('#mm').value,n:+$('#mq').value,play:$('#mpl').checked})};
 }
 function mpJoinScreen(code){
  app.innerHTML=`<div class="section-kicker">🎮 Multiplayer</div><h1>Join a game</h1><div class="card"><label for="jc">Room code</label><input id="jc" maxlength="4" autocapitalize="characters" autocomplete="off" value="${esc(code||'')}" style="text-transform:uppercase;letter-spacing:.3em;font-size:1.6rem;text-align:center"><label for="jn" style="display:block;margin-top:12px">Your name</label><input id="jn" maxlength="24" autocomplete="nickname" value="${esc(store('cc_name')||'')}"><p class="mute" id="merr" role="alert"></p><div class="row"><button class="main" id="jgo">Join →</button><button id="jbk">Back</button></div></div>`;
@@ -1205,7 +1245,7 @@ function mpLobby(){
  app.innerHTML=`<div class="section-kicker">🎮 Room</div><h1>Code <span class="code">${esc(r.code)}</span></h1><p class="mute">Topic: ${esc(mpTopic(r))} · host: ${esc(r.hostName)}</p>
  <div class="card"><div class="lobby"><img src="/qr.svg?u=${encodeURIComponent(link)}" alt="QR code to join this room" width="180" height="180"><div><p><b>Scan the QR code</b>, or open the link and type the code.</p><p class="mute" style="word-break:break-all">${esc(link)}</p><button id="cp">Copy link</button></div></div></div>
  <div class="card"><h2>Players <span id="pc"></span></h2><ul class="plist" id="pl"></ul></div>
- <div class="row">${MP.host?'<button class="main" id="st">Start the game →</button>':'<p class="mute">Waiting for the host to start…</p>'}<button id="lv">Leave</button></div>`;
+ <div class="row">${MP.host?'<button class="main" id="st">Start the game →</button>':`<p class="mute">${r.mode==='live'?'You’re in! Look for your name on the host’s screen.':'Waiting for the host to start…'}</p>`}<button id="lv">Leave</button></div>`;
  $('#lv').onclick=mpLeave;
  $('#cp').onclick=()=>{try{navigator.clipboard.writeText(link);$('#cp').textContent='Copied!'}catch(e){}};
  if($('#st'))$('#st').onclick=()=>mpSend({t:'start'});
@@ -1226,6 +1266,95 @@ function mpHostDraw(){
  const r=MP.room,done=r.players.filter(p=>p.done).length;
  $('#hb').innerHTML=`<p class="mute">Topic: ${esc(mpTopic(r))} · ${done} of ${r.players.length} finished${r.state==='done'?' · game over':''}</p>${boardRows(r,100)}<div class="row" style="margin-top:12px"><button class="main" id="ag">Play again</button><button id="en">End game</button><button id="lv2">Leave</button></div>`;
  $('#ag').onclick=()=>mpSend({t:'again'});$('#en').onclick=()=>mpSend({t:'end'});$('#lv2').onclick=mpLeave;
+}
+// Live quiz (Kahoot-style): the host's screen shows each question, players answer on their own devices,
+// and the server keeps the time and the score. Text from the server is always escaped.
+const LCOL=[['#d63048','▲'],['#1b64c8','◆'],['#a87400','●'],['#23874a','■'],['#7b4cc0','★'],['#0b8a8a','✚']];
+let LIVE={};
+const ord=n=>n+(n%100>10&&n%100<14?'th':['th','st','nd','rd'][n%10]||'th');
+const fmt=n=>Number(n||0).toLocaleString('en-GB');
+function liveList(){
+ const r=MP.room,seed=MP.seed;if(LIVE.list&&LIVE.seed===seed)return LIVE.list;
+ const rr=rng(seed),o={A1:0,A2:1,B1:2},pool=Q.filter(q=>r.sub?q.sub===r.sub:(r.theme==='M'||q.th===r.theme));
+ LIVE.seed=seed;LIVE.list=shuffle(pool,rr).slice(0,r.n).map(q=>scrambleQuestion(q,rr)).sort((a,b)=>o[a.lv]-o[b.lv]);
+ return LIVE.list;
+}
+function liveSend(i){if(!MP.seed)return;const L=liveList(),q=L[i];if(q)mpSend({t:'lq',i,n:L.length,time:TIME[q.t],q:{t:q.t,lv:q.lv,sub:q.sub,q:q.q,o:q.o,a:q.a,alt:q.alt,s:q.s}})}
+function liveHold(msg){clearInterval(timer);app.innerHTML=`<div class="section-kicker">⚡ Live quiz · room ${esc(MP.code||'')}</div><div class="card lwait"><b>${esc(msg)}</b><p class="mute">${MP.spec?'Show this screen to everybody.':'Keep this page open.'}</p></div>`}
+function liveCtl(){return MP.host?`<div class="row"><button id="lsk">Skip ⏭</button><button id="len">End game</button></div>`:''}
+function liveBindCtl(){if($('#lsk'))$('#lsk').onclick=()=>mpSend({t:'skip'});if($('#len'))$('#len').onclick=()=>{if(confirm('End the game now and show the podium?'))mpSend({t:'end'})}}
+function liveQuestion(m){
+ clearInterval(timer);const now=performance.now();
+ LIVE.cur=m;LIVE.go=now+m.wait;LIVE.end=now+m.left;LIVE.open=m.wait<=0;LIVE.mine=m.answered?null:undefined;LIVE.timeup=false;LIVE.pick=[];LIVE.seq=[];
+ if(!LIVE.open)SFX.whistle();
+ liveDraw();let lt=99;
+ timer=setInterval(()=>{
+  const t=performance.now();
+  if(!LIVE.open&&t>=LIVE.go){LIVE.open=true;liveDraw()}
+  const left=Math.max(0,LIVE.end-t)/1000,el=$('#lt'),tb=$('#tb');
+  if(el)el.textContent=LIVE.open?Math.ceil(left):Math.max(1,Math.ceil((LIVE.go-t)/1000));
+  if(tb)tb.style.width=(LIVE.open?Math.min(100,left/m.time*100):100)+'%';
+  if(LIVE.open&&left<=5&&left>0&&Math.ceil(left)!==lt){lt=Math.ceil(left);SFX.tick()}
+  if(LIVE.open&&left<=0&&!MP.spec&&LIVE.mine===undefined&&!LIVE.timeup){LIVE.timeup=true;liveDraw()}
+ },100);
+}
+function liveAnswer(a){if(LIVE.mine!==undefined||LIVE.timeup)return;LIVE.mine=a;SFX.click();mpSend({t:'ans',i:LIVE.cur.i,a});liveDraw()}
+function liveDraw(){
+ const m=LIVE.cur;if(!m)return;const q=m.q,pres=MP.spec,lab=SUBLABEL[q.sub]?' · '+SUBLABEL[q.sub]:'';
+ const head=`<div class="live-top"><span class="lv">${esc(q.lv)}</span>Question ${m.i+1} of ${m.n}${esc(lab)}<span class="lcount" id="lc">${m.count} / ${m.of} answered</span></div>`;
+ const title=`<div class="ltime" id="lt"></div><h2>${esc(q.q)}${TTS?' <button class="chip lis" id="ls" aria-label="Listen to the question">🔊</button>':''}</h2>`;
+ const opts=(click)=>`<div class="lopts">${q.o.map((o,i)=>`<${click?'button':'div'} class="lopt${LIVE.pick.includes(i)?' on':''}" data-i="${i}" style="--c:${LCOL[i%6][0]}"${click&&q.t==='multi'?` aria-pressed="${LIVE.pick.includes(i)}"`:''}><span class="shp" aria-hidden="true">${LCOL[i%6][1]}</span><span>${esc(o)}</span></${click?'button':'div'}>`).join('')}</div>`;
+ let body;
+ if(!LIVE.open)body='<p class="lready">Get ready…</p>';
+ else if(pres)body=q.o?opts(false)+(q.t==='multi'?'<p class="mute">Choose ALL the correct answers.</p>':''):q.t==='order'?`<div class="row">${q.words.map(w=>`<span class="chip lword">${esc(w)}</span>`).join('')}</div><p class="mute">Put the words in order on your device.</p>`:`<p class="mute">${q.t==='num'?'Write a number':'Type the answer'} on your device.</p>`;
+ else if(LIVE.mine!==undefined)body='<div class="lwait"><b>✓ Answer sent</b><p class="mute">Waiting for the others…</p></div>';
+ else if(LIVE.timeup)body='<div class="lwait"><b>⏱ Time’s up!</b><p class="mute">Waiting for the results…</p></div>';
+ else if(q.t==='mc')body=opts(true);
+ else if(q.t==='multi')body=opts(true)+'<p class="mute">Choose ALL the correct answers.</p><div class="row"><button class="main" id="lok">Send answer</button></div>';
+ else if(q.t==='order')body='<div class="slot" id="seq" aria-label="Your answer"></div><div class="row" id="pool"></div><div class="row" style="margin-top:8px"><button class="main" id="lok">Send answer</button></div>';
+ else body=`<input id="li" ${q.t==='num'?'type="number" inputmode="decimal"':'autocomplete="off" autocapitalize="none" spellcheck="false"'} aria-label="Your answer"><div class="row" style="margin-top:10px"><button class="main" id="lok">Send answer</button></div>`;
+ app.innerHTML=`${head}<div class="bar"><i id="tb"></i></div><div class="card ticket live">${title}${body}</div>${liveCtl()}`;
+ liveBindCtl();
+ if($('#ls'))$('#ls').onclick=()=>speak(q.q);
+ const t=performance.now(),el=$('#lt');if(el)el.textContent=LIVE.open?Math.ceil(Math.max(0,LIVE.end-t)/1000):Math.max(1,Math.ceil((LIVE.go-t)/1000));
+ if(pres||!LIVE.open||LIVE.mine!==undefined||LIVE.timeup)return;
+ if(q.t==='mc')app.querySelectorAll('.lopt').forEach(b=>b.onclick=()=>liveAnswer(+b.dataset.i));
+ if(q.t==='multi'){app.querySelectorAll('.lopt').forEach(b=>b.onclick=()=>{SFX.click();const i=+b.dataset.i,k=LIVE.pick.indexOf(i);k<0?LIVE.pick.push(i):LIVE.pick.splice(k,1);b.classList.toggle('on',k<0);b.setAttribute('aria-pressed',k<0)});$('#lok').onclick=()=>liveAnswer(LIVE.pick.slice())}
+ if(q.t==='order'){
+  const draw=()=>{
+   $('#seq').innerHTML=LIVE.seq.map(i=>`<button class="chip main" data-s="${i}">${esc(q.words[i])}</button>`).join('');
+   $('#pool').innerHTML=q.words.map((w,i)=>LIVE.seq.includes(i)?'':`<button class="chip" data-p="${i}">${esc(w)}</button>`).join('');
+   $('#seq').querySelectorAll('button').forEach(b=>b.onclick=()=>{LIVE.seq.splice(LIVE.seq.indexOf(+b.dataset.s),1);draw()});
+   $('#pool').querySelectorAll('button').forEach(b=>b.onclick=()=>{SFX.click();LIVE.seq.push(+b.dataset.p);draw()});
+  };draw();$('#lok').onclick=()=>liveAnswer(LIVE.seq.map(i=>q.words[i]));
+ }
+ const li=$('#li');if(li){li.focus();const go=()=>{if(li.value.trim())liveAnswer(li.value.trim())};$('#lok').onclick=go;li.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();if(!e.repeat)go()}}}
+}
+function liveRows(list,max){return `<ol class="lboard">${list.slice(0,max).map((p,i)=>`<li class="${p.id===MP.id?'me':''}"><span class="rk">${i+1}</span><span class="nm">${esc(p.name)}${p.id===MP.id?' (you)':''}</span><span class="sc">${fmt(p.score)}</span></li>`).join('')||'<li class="mute">No players.</li>'}</ol>`}
+function liveReveal(m){
+ clearInterval(timer);LIVE.cur=null;
+ const q=m.q,me=m.me,last=m.i>=m.n-1,key=MP.round+'-'+m.i,c=me?(me.none||me.sc<.4?'bad':me.sc<.8?'mid':'good'):'';
+ if(LIVE.shown!==key){LIVE.shown=key;if(me&&!me.none&&q.sub)trackProg([{sub:q.sub,q:q.q,sc:me.sc,c:c==='bad'?'none':c}]);c==='good'?SFX.good():c==='mid'?SFX.mid():c==='bad'?SFX.bad():SFX.clack(2)}
+ const res=me?`<div class="card lres ${c}"><div class="lbig">${me.none?'⏱ No answer':c==='good'?'✔ Correct!':c==='mid'?'◑ Nearly!':'✘ Not this time'}</div><p class="lpts">+${fmt(me.pts+me.bonus)} points${me.bonus?` (🔥 streak bonus +${me.bonus})`:''}</p><p>You are <b>${ord(me.rank)}</b> of ${me.of} with ${fmt(me.score)} points${me.streak>1?` · 🔥 ${me.streak} in a row`:''}</p></div>`:'';
+ const tot=Math.max(1,...(m.dist||[0])),ok=i=>Array.isArray(m.correct.a)?m.correct.a.includes(i):m.correct.a===i;
+ const dist=m.dist?`<div class="ldist">${q.o.map((o,i)=>`<div class="ldrow${ok(i)?' ok':''}"><span class="shp" style="color:${LCOL[i%6][0]}" aria-hidden="true">${LCOL[i%6][1]}</span><span class="ldl">${esc(o)}${ok(i)?' ✔':''}<span class="ldbar" style="--c:${LCOL[i%6][0]};width:${Math.round(100*m.dist[i]/tot)}%"></span></span><b>${m.dist[i]}</b></div>`).join('')}</div>`:'';
+ app.innerHTML=`<div class="live-top"><span class="lv">${esc(q.lv)}</span>Question ${m.i+1} of ${m.n}<span class="lcount">${m.count} / ${m.of} answered</span></div>${res}
+ <div class="card"><p class="mute" style="margin-top:0">${esc(q.q)}</p><div class="section-kicker">Correct answer</div><h2>${esc(m.correct.text)}</h2>${dist}</div>
+ <div class="card"><h2>🏆 Top ${Math.min(5,m.top.length)}</h2>${liveRows(m.top,5)}</div>
+ <div class="row">${MP.host?`<button class="main" id="lnx">${last?'Show the podium 🏆':'Next question →'}</button>${last?'':'<button id="len">End game</button>'}`:'<p class="mute">Waiting for the host…</p>'}</div>`;
+ if($('#lnx')){$('#lnx').onclick=()=>{$('#lnx').disabled=true;last?mpSend({t:'end'}):liveSend(m.i+1)};$('#lnx').focus()}
+ liveBindCtl();
+}
+function livePodium(m){
+ clearInterval(timer);LIVE.cur=null;
+ const b=m.board,k=b.findIndex(p=>p.id===MP.id),me=b[k],key='final-'+MP.round;
+ if(LIVE.shown!==key){LIVE.shown=key;SFX.fanfare();confetti()}
+ app.innerHTML=`<div class="section-kicker">⚡ Live quiz · room ${esc(MP.code)}</div><h1>Podium</h1>
+ <div class="podium">${[1,0,2].map(i=>b[i]?`<div class="pod p${i+1}"><div class="pname">${esc(b[i].name)}</div><div class="pblock"><b>${i+1}</b><span>${fmt(b[i].score)}</span></div></div>`:'').join('')}</div>
+ ${me?`<div class="card lres good"><div class="lbig">You finished ${ord(k+1)}</div><p class="lpts">${fmt(me.score)} points · ${me.right} of ${m.n} correct</p></div>`:''}
+ <div class="card"><h2>Final scores</h2>${liveRows(b,100)}</div>
+ <div class="row">${MP.host?'<button class="main" id="ag">Play again</button>':''}<button id="lv2">Leave room</button></div>`;
+ if($('#ag'))$('#ag').onclick=()=>mpSend({t:'again'});$('#lv2').onclick=mpLeave;
 }
 function route(){
  const h=location.hash||'',m=h.match(/^#class-([A-Z0-9]{4})-([MGVEW])$/),r=h.match(/^#room-([A-Z0-9]{4})$/),sv=SSX.get();
@@ -1259,7 +1388,7 @@ function menu(){
  <div class="card feature-card"><div class="feature-top"><div><div class="section-kicker">🚦 Today’s departure</div><h2>Daily challenge</h2><p>Today’s focus: <b>${IC[th]} ${TN[th]}</b>. Seven questions, one shared challenge.</p><p class="mute">${n?'🔥 '+n+(n>1?' days':' day')+' in a row':'Play today to start your streak.'}</p></div><div class="feature-emoji">🎟️</div></div><div class="row" style="margin-top:12px"><button class="main" id="dc">${played?'See today’s result':'Start today’s train'} →</button><button id="mix">🎲 Mixed practice</button></div></div>
  ${WQ.length?`<div class="card"><div class="section-kicker">🔁 Learn from mistakes</div><h2>Fix my mistakes</h2><p class="mute">${WQ.length} question${WQ.length>1?'s':''} to try again. Answer correctly to remove them from the list.</p><button class="main" id="fx">Practise my mistakes →</button></div>`:''}
  <div class="section-kicker">Choose your learning route</div><h2>Explore by topic</h2><p class="mute">Pick a whole subject or go straight to a smaller theme. Short topic rounds use the questions available in that theme.</p><div class="menu-grid">${cards}</div>
- <section class="card"><div class="section-kicker">🎮 Play together</div><h2>Multiplayer</h2><p class="mute">Create a room, share the QR code, and race on a live leaderboard.</p><div class="row"><button class="main" id="mph">Host a game</button><button id="mpj">Join with a code</button></div></section>
+ <section class="card"><div class="section-kicker">🎮 Play together</div><h2>Multiplayer</h2><p class="mute">⚡ Live quiz: show the questions on your screen while everybody answers on their phone, then see the scores and the podium. Or start a 🚂 train race where everyone plays at their own speed.</p><div class="row"><button class="main" id="mph">Host a game</button><button id="mpj">Join with a code</button></div></section>
  <section class="card"><div class="section-kicker">👩‍🏫 For the classroom</div><h2>Class game</h2><p class="mute">Create a shared quiz link and QR code for your students.</p><label for="cs">Choose a topic</label><select id="cs" aria-label="Topic">${'GVEWM'.split('').map(k=>`<option value="${k}">${k==='M'?'🎲 Mixed topics':IC[k]+' '+TN[k]}</option>`).join('')}</select><div class="row" style="margin-top:12px"><button class="main" id="cg">Create class game →</button></div></section>
  <details class="card details-card"><summary>How to play</summary><ul><li>Daily and full-topic rounds have 7 questions, from A1 to B1.</li><li>Short theme rounds include the questions available for that theme.</li><li>Correct answers add miles and carriages; quick answers and streaks can earn bonuses.</li><li>London to Edinburgh is ${TOTAL} miles. Can you get the train all the way there?</li></ul></details>`;
  $('#dc').onclick=()=>{if(played){RM=d.meta||{name:store('cc_name')||'',mode:'Daily challenge',topic:'',date:d.date};result(d.res,true)}else{SFX.whistle();start(false,th)}};
