@@ -1054,6 +1054,12 @@ function rng(s){let h=0;for(const c of s)h=Math.imul(31,h)+c.charCodeAt(0)|0;ret
 function shuffle(a,r){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(r()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
 function dailyUserId(){let id=store('cc_daily_user');if(!id){id='u-'+Math.random().toString(36).slice(2,10)+'-'+Date.now().toString(36);store('cc_daily_user',id)}return id}
 function dailySeed(){return 'cc-'+dailyUserId()+'-'+today()}
+const RECENT=150;
+function recentQs(){try{const a=JSON.parse(store('cc_recent'));if(Array.isArray(a))return a}catch(e){}return []}
+// Puts questions not seen recently first, keeping the shuffled order within each group.
+function freshFirst(a,seen){if(!seen||!seen.length)return a;const s=new Set(seen);return [...a.filter(q=>!s.has(q.q)),...a.filter(q=>s.has(q.q))]}
+// Takes n questions, each from a subtopic not used yet in this round when possible.
+function spread(a,n,used){const out=[];for(const q of a){if(out.length>=n)break;if(!used.has(q.sub)){used.add(q.sub);out.push(q)}}for(const q of a){if(out.length>=n)break;if(!out.includes(q))out.push(q)}return out}
 function scrambleQuestion(q,r){if(!q||!r)return q;const out=JSON.parse(JSON.stringify(q));if(Array.isArray(out.o)&&typeof out.a==='number'){const map=shuffle(out.o.map((_,i)=>i),r);out.o=map.map(i=>q.o[i]);out.a=map.indexOf(out.a)}else if(Array.isArray(out.o)&&Array.isArray(out.a)){const map=shuffle(out.o.map((_,i)=>i),r);out.o=map.map(i=>q.o[i]);out.a=out.a.map(i=>map.indexOf(i)).filter(v=>v>=0).sort((a,b)=>a-b)}return out}
 const norm=s=>String(s).toLowerCase().trim().replace(/[^a-z0-9 ]/g,"").replace(/\s+/g," ");
 function lev(a,b){const d=[];for(let i=0;i<=a.length;i++){d[i]=[i];for(let j=1;j<=b.length;j++)d[i][j]=i?0:j}for(let i=1;i<=a.length;i++)for(let j=1;j<=b.length;j++)d[i][j]=Math.min(d[i-1][j]+1,d[i][j-1]+1,d[i-1][j-1]+(a[i-1]===b[j-1]?0:1));return d[a.length][b.length]}
@@ -1084,7 +1090,10 @@ const trainHTML=(res,all)=>`<div class='train' aria-label='Your train'>${locoSVG
 
 function start(practice,th,seed,sub,mp,n){
  const r=rng(seed||(practice?String(Math.random()):dailySeed()));
- S={qs:pickQs(th,r,sub,n),i:0,res:[],practice,r,th,sub,mp};show();
+ // Solo practice rounds skip recently seen questions while there are fresh ones to pick.
+ const solo=practice&&!mp&&!seed&&sub!=='__wrong',seen=solo?recentQs():null,qs=pickQs(th,r,sub,n,seen);
+ if(solo)store('cc_recent',JSON.stringify([...seen,...qs.map(q=>q.q)].slice(-RECENT)));
+ S={qs,i:0,res:[],practice,r,th,sub,mp};show();
 }
 function show(){
  clearInterval(timer);
@@ -1574,7 +1583,7 @@ const SUBLABEL={'g-ps':'Present simple','g-pc':'Present continuous','g-pm':'Pres
 'e-daily':'Time & routines','e-shop':'Shopping & money','e-food':'Restaurants & cafés','e-travel':'Travel & directions','e-social':'Polite phrases & phone calls','e-intro':'Greetings & introductions','e-health':'At the doctor’s','e-hotel':'At the hotel','e-plans':'Invitations & plans','e-opinion':'Opinions & agreeing','e-help':'Help & apologies','e-msg':'Emails & messages','e-class':'Classroom English',
 'w-uk':'UK & English-speaking world','w-geo':'Countries & capitals','w-facts':'Numbers & facts','w-culture':'Festivals & traditions','w-nature':'Our planet','w-science':'Simple science','w-food':'Food around the world','w-sport':'Sport around the world','w-time':'Calendar & dates','w-money':'Money & measures','__wrong':'My mistakes'};
 function esc(s){return String(s).replace(/[&<>"']/g,c=>'&#'+c.charCodeAt(0)+';')}
-function pickQs(th,r,sub,n){const lo={A1:0,A2:1,B1:2};if(Array.isArray(sub))return shuffle(Q.filter(q=>sub.includes(q.sub)),r).slice(0,n||7).map(q=>scrambleQuestion(q,r)).sort((a,b)=>lo[a.lv]-lo[b.lv]);let pool=Q.filter(q=>!th||th==='M'||q.th===th);if(sub)pool=sub==='__wrong'?wrongQs():Q.filter(q=>q.sub===sub);if(sub)return shuffle(pool,r).slice(0,7).map(q=>scrambleQuestion(q,r)).sort((a,b)=>({A1:0,A2:1,B1:2}[a.lv]-{A1:0,A2:1,B1:2}[b.lv]));const out=[];[['A1',2],['A2',3],['B1',2]].forEach(([l,n])=>out.push(...shuffle(pool.filter(q=>q.lv===l),r).slice(0,n).map(q=>scrambleQuestion(q,r))));if(out.length<7)out.push(...shuffle(pool.filter(q=>!out.includes(q)),r).slice(0,7-out.length).map(q=>scrambleQuestion(q,r)));const o={A1:0,A2:1,B1:2};return out.sort((a,b)=>o[a.lv]-o[b.lv])}
+function pickQs(th,r,sub,n,seen){const lo={A1:0,A2:1,B1:2};if(Array.isArray(sub))return freshFirst(shuffle(Q.filter(q=>sub.includes(q.sub)),r),seen).slice(0,n||7).map(q=>scrambleQuestion(q,r)).sort((a,b)=>lo[a.lv]-lo[b.lv]);let pool=Q.filter(q=>!th||th==='M'||q.th===th);if(sub)pool=sub==='__wrong'?wrongQs():Q.filter(q=>q.sub===sub);if(sub)return freshFirst(shuffle(pool,r),seen).slice(0,7).map(q=>scrambleQuestion(q,r)).sort((a,b)=>({A1:0,A2:1,B1:2}[a.lv]-{A1:0,A2:1,B1:2}[b.lv]));const out=[],used=new Set();[['A1',2],['A2',3],['B1',2]].forEach(([l,n])=>out.push(...spread(freshFirst(shuffle(pool.filter(q=>q.lv===l),r),seen),n,used).map(q=>scrambleQuestion(q,r))));if(out.length<7)out.push(...freshFirst(shuffle(pool.filter(q=>!out.includes(q)),r),seen).slice(0,7-out.length).map(q=>scrambleQuestion(q,r)));const o={A1:0,A2:1,B1:2};return out.sort((a,b)=>o[a.lv]-o[b.lv])}
 function dayTh(){const d=new Date();return 'GVEW'[Math.floor(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate())/864e5)%4]}
 function yest(){const d=new Date(Date.now()-864e5);return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate()}
 function streak(){try{const s=JSON.parse(store('cc_streak'));return s&&(s.last===today()||s.last===yest())?s.n:0}catch(e){return 0}}
