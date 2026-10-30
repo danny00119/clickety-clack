@@ -31,3 +31,8 @@
 - Ако нещо е неясно или решението има компромис, спри и попитай, не гадай.
 - Потребителският интерфейс е на български. Кодът и коментарите на английски.
 - Дизайнът е важен: собственикът на дизайна е Симона. Не променяй визията без одобрение.
+
+## Language
+- Quiz content (questions, answers, AI generation prompts) is in English: the product is for English-language teachers.
+- UI language: Bulgarian.
+- Code and comments in English.
