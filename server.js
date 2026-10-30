@@ -4,6 +4,7 @@
 const http = require('http'), fs = require('fs'), path = require('path'), crypto = require('crypto');
 const { WebSocketServer } = require('ws');
 const QRCode = require('qrcode');
+const { pickRoute } = require('./routes');
 
 const PORT = Number(process.env.PORT) || 3000;
 const PUB = path.join(__dirname, 'public');
@@ -64,17 +65,19 @@ function cleanAns(q, a) {
 }
 const active = r => [...r.players.values()].filter(p => !p.spec);
 const answeredIds = r => active(r).filter(p => p.ans).map(p => p.id);
-const liveBoard = r => active(r).map(p => ({ id: p.id, name: p.name, c: p.c, score: p.score, right: p.right, online: !!p.ws })).sort((a, b) => b.score - a.score || b.right - a.right);
+// The furthest train leads (one station per correct answer); points from fast answers decide between trains at the same station.
+const byTrain = (a, b) => b.right - a.right || b.score - a.score;
+const liveBoard = r => active(r).map(p => ({ id: p.id, name: p.name, c: p.c, score: p.score, right: p.right, online: !!p.ws })).sort(byTrain);
 function sendQuestion(r, p) {
   const L = r.live, now = Date.now();
-  send(p.ws, { t: 'lq', i: L.i, n: L.n, q: L.pub, time: L.time, wait: Math.max(0, L.startAt - now), left: Math.max(0, L.endAt - now), answered: !!p.ans, count: L.count, of: active(r).length, who: answeredIds(r) });
+  send(p.ws, { t: 'lq', i: L.i, n: L.n, route: L.route, q: L.pub, time: L.time, wait: Math.max(0, L.startAt - now), left: Math.max(0, L.endAt - now), answered: !!p.ans, count: L.count, of: active(r).length, who: answeredIds(r) });
 }
 function sendReveal(r, p) {
   const L = r.live, k = L.board.findIndex(x => x.id === p.id), a = p.ans || { sc: 0, pts: 0, bonus: 0, none: true };
-  send(p.ws, { t: 'lreveal', i: L.i, n: L.n, q: L.pub, correct: { text: correctText(L.q), a: L.q.t === 'mc' || L.q.t === 'multi' ? L.q.a : null }, dist: L.dist, count: L.count, of: active(r).length, top: L.board.slice(0, 10),
-    me: k < 0 ? null : { sc: a.sc, pts: a.pts, bonus: a.bonus, none: !!a.none, score: p.score, prev: p.score - a.pts - a.bonus, right: p.right, streak: p.streak, rank: k + 1, of: L.board.length } });
+  send(p.ws, { t: 'lreveal', i: L.i, n: L.n, route: L.route, q: L.pub, correct: { text: correctText(L.q), a: L.q.t === 'mc' || L.q.t === 'multi' ? L.q.a : null }, dist: L.dist, count: L.count, of: active(r).length, top: L.board.slice(0, 10),
+    me: k < 0 ? null : { sc: a.sc, pts: a.pts, bonus: a.bonus, none: !!a.none, score: p.score, prev: p.score - a.pts - a.bonus, right: p.right, prevRight: p.right - (a.sc >= 0.8 ? 1 : 0), streak: p.streak, rank: k + 1, of: L.board.length } });
 }
-const sendFinal = (r, p) => send(p.ws, { t: 'lfinal', board: r.live.board, n: r.live.n });
+const sendFinal = (r, p) => send(p.ws, { t: 'lfinal', board: r.live.board, n: r.live.n, route: r.live.route });
 function sendLive(r, p) {
   const L = r.live; if (r.mode !== 'live' || !L) return;
   if (L.phase === 'question') sendQuestion(r, p); else if (L.phase === 'reveal') sendReveal(r, p); else if (L.phase === 'end') sendFinal(r, p);
@@ -110,9 +113,9 @@ function snapshot(r, viewer) {
     code: r.code, state: r.state, round: r.round, theme: r.theme, sub: r.sub, subs: r.subs, max: r.max, mode: r.mode, n: r.n, unit: r.unit, hostId: r.hostId, hostName: host ? host.name : '',
     // In a live quiz only the host gets the seed: it decides which questions (and answers) come next.
     seed: !live || (viewer && viewer.id === r.hostId) ? r.seed : '',
-    live: live && r.live ? { phase: r.live.phase, i: r.live.i, n: r.live.n } : null,
+    live: live && r.live ? { phase: r.live.phase, i: r.live.i, n: r.live.n, route: r.live.route || null } : null,
     players: active(r).map(p => ({ id: p.id, name: p.name, c: p.c, host: p.id === r.hostId, online: !!p.ws, mi: p.mi, late: p.late, sq: p.sq, done: p.done, i: p.i, score: p.score, right: p.right }))
-      .sort(live ? (a, b) => b.score - a.score || b.right - a.right : (a, b) => b.mi - a.mi || a.late - b.late || Number(b.done) - Number(a.done))
+      .sort(live ? byTrain : (a, b) => b.mi - a.mi || a.late - b.late || Number(b.done) - Number(a.done))
   };
 }
 const send = (ws, o) => { if (ws && ws.readyState === 1) ws.send(JSON.stringify(o)); };
@@ -187,7 +190,7 @@ function onMsg(ws, m) {
       if (!isHost || r.mode !== 'live' || r.state !== 'playing') return;
       const L = r.live, i = Number(m.i);
       if (L.phase === 'question' || L.phase === 'end' || i !== L.i + 1) return;
-      if (i === 0) L.n = Math.max(1, Math.min(r.n, int(m.n, 30)));
+      if (i === 0) { L.n = Math.max(1, Math.min(r.n, int(m.n, 30))); L.route = pickRoute(L.n, k => crypto.randomInt(k)); }
       if (i >= L.n) return;
       const q = cleanQ(m.q);
       if (!q) return err(ws, 'This question could not be sent.');
@@ -205,8 +208,8 @@ function onMsg(ws, m) {
       if (now < L.startAt - 500 || now > L.endAt + 1000) return;
       const a = cleanAns(L.q, m.a), sc = a == null ? 0 : scoreAns(L.q, a);
       const used = Math.min(1, Math.max(0, (now - L.startAt) / (L.time * 1000)));
-      // Up to 1000 per question (600 for the answer, 300 for speed, 100 streak bonus), so a perfect game
-      // is exactly 1000 × questions: the client turns this into distance along the London–Edinburgh line.
+      // Up to 1000 points per question: 600 for the answer, 300 for speed and 100 streak bonus.
+      // An answer that is at least 80 % right also moves the train one station (p.right).
       const pts = Math.round(sc * (600 + 300 * (1 - used)));
       p.streak = sc >= 0.8 ? p.streak + 1 : 0;
       const bonus = p.streak >= 2 ? Math.min(100, (p.streak - 1) * 25) : 0;

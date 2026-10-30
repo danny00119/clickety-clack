@@ -1,53 +1,10 @@
 // Multiplayer rooms (T2): the teacher creates a live room, students join with the code and a nickname,
 // and everybody in the room sees who is inside in real time.
-const { test, before, after } = require('node:test');
+const { test } = require('node:test');
 const assert = require('node:assert/strict');
-const { spawn } = require('child_process');
-const net = require('net');
-const path = require('path');
-const WebSocket = require('ws');
+const H = require('./helpers');
 
-let srv, base;
-
-const freePort = () => new Promise((ok, no) => {
-  const s = net.createServer().listen(0, () => { const { port } = s.address(); s.close(() => ok(port)); }).on('error', no);
-});
-
-before(async () => {
-  const port = await freePort();
-  base = 'localhost:' + port;
-  srv = spawn(process.execPath, [path.join(__dirname, '..', 'server.js')], { env: { ...process.env, PORT: String(port) }, stdio: ['ignore', 'pipe', 'inherit'] });
-  await new Promise((ok, no) => {
-    srv.stdout.on('data', d => { if (String(d).includes('listening')) ok(); });
-    srv.on('exit', c => no(new Error('server exited with ' + c)));
-  });
-});
-after(() => { srv.kill(); });
-
-// A WebSocket client that queues messages so a test can wait for the next one of a given type.
-function client() {
-  const ws = new WebSocket('ws://' + base + '/ws'), inbox = [], waiting = [];
-  ws.on('message', d => {
-    const m = JSON.parse(d);
-    const w = waiting.findIndex(x => x.match(m));
-    if (w >= 0) waiting.splice(w, 1)[0].ok(m); else inbox.push(m);
-  });
-  const open = new Promise(ok => ws.on('open', ok));
-  return {
-    ws,
-    async send(o) { await open; ws.send(JSON.stringify(o)); },
-    next(match, ms = 2000) {
-      const i = inbox.findIndex(match);
-      if (i >= 0) return Promise.resolve(inbox.splice(i, 1)[0]);
-      return new Promise((ok, no) => {
-        const t = setTimeout(() => no(new Error('timed out waiting for a message')), ms);
-        waiting.push({ match, ok: m => { clearTimeout(t); ok(m); } });
-      });
-    },
-    close() { ws.close(); }
-  };
-}
-const type = t => m => m.t === t;
+const srv = H.useServer(), client = () => H.client(srv.base), { type } = H;
 const names = room => room.players.map(p => p.name).sort();
 // Waits for the room update in which the player list matches the expected names.
 const roomWith = (c, list) => c.next(m => m.t === 'room' && JSON.stringify(names(m.room)) === JSON.stringify([...list].sort()));
@@ -125,12 +82,12 @@ test('a wrong code and a full room give a clear error', async () => {
 });
 
 test('the join link has a QR code, and the server refuses QR codes for other sites', async () => {
-  const link = 'http://' + base + '/#room-ABCD';
-  const ok = await fetch('http://' + base + '/qr.svg?u=' + encodeURIComponent(link));
+  const link = 'http://' + srv.base + '/#room-ABCD';
+  const ok = await fetch('http://' + srv.base + '/qr.svg?u=' + encodeURIComponent(link));
   assert.equal(ok.status, 200);
   assert.match(ok.headers.get('content-type'), /image\/svg\+xml/);
   assert.match(await ok.text(), /^<svg/);
 
-  const bad = await fetch('http://' + base + '/qr.svg?u=' + encodeURIComponent('https://example.com/#room-ABCD'));
+  const bad = await fetch('http://' + srv.base + '/qr.svg?u=' + encodeURIComponent('https://example.com/#room-ABCD'));
   assert.equal(bad.status, 400);
 });

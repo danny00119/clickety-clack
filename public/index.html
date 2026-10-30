@@ -1013,7 +1013,7 @@ function initSnd(){
  // Focus keeps the panel open for keyboard and touch users; a mouse closes it by leaving.
  w.onpointerleave=e=>{if(e.pointerType==='mouse'&&w.contains(document.activeElement))document.activeElement.blur()};
 }
-function adv(m){const b=$('.track b');if(!b)return;b.style.left=at(m/TOTAL);b.classList.add('run');const e=$('.ends span:nth-child(2)');if(e)e.textContent=D(Math.min(m,TOTAL))+' / '+D(TOTAL)+' '+UL();let n=0;const iv=setInterval(()=>{const p=document.createElement('i');p.className='puff';p.style.left=b.offsetLeft+'px';b.parentNode.appendChild(p);setTimeout(()=>p.remove(),950);if(++n>6){clearInterval(iv);b.classList.remove('run')}},130)}
+function adv(m,L=MILES){const b=$('.track b');if(!b)return;b.style.left=at(m/L.total);b.classList.add('run');const e=$('.ends span:nth-child(2)');if(e)e.textContent=L.dist(m);let n=0;const iv=setInterval(()=>{const p=document.createElement('i');p.className='puff';p.style.left=b.offsetLeft+'px';b.parentNode.appendChild(p);setTimeout(()=>p.remove(),950);if(++n>6){clearInterval(iv);b.classList.remove('run')}},130)}
 function confetti(){if(matchMedia('(prefers-reduced-motion:reduce)').matches)return;const cs=['#c2412d','#1d5a43','#e8a631','#2f6bd3','#f7efda'];for(let i=0;i<46;i++){const e=document.createElement('i');e.className='conf';e.style.left=Math.random()*100+'vw';e.style.background=cs[i%5];e.style.animationDelay=Math.random()*.6+'s';e.style.animationDuration=(1.8+Math.random()*1.4)+'s';document.body.appendChild(e);setTimeout(()=>e.remove(),3600)}}
 const store=(k,v)=>{try{if(v===undefined)return localStorage.getItem(k);localStorage.setItem(k,v)}catch(e){return null}};
 const today=()=>{const d=new Date();return d.getFullYear()+"-"+(d.getMonth()+1)+"-"+d.getDate()};
@@ -1036,15 +1036,20 @@ const KM=1.609344;
 const unit=()=>(MP&&MP.room&&MP.room.unit)||(store('cc_unit')==='km'?'km':'mi');
 const D=mi=>Math.round(mi*(unit()==='km'?KM:1));
 const UL=()=>unit()==='km'?'km':'miles';
-const stationAt=mi=>{let s=ROUTE[0][0];for(const [n,m] of ROUTE)if(mi>=m)s=n;return s};
-const nextStation=mi=>(ROUTE.find(([n,m])=>m>mi)||[''])[0];
+// A line is a list of [station, position] pairs, its length and how to show the distance travelled.
+// The train race runs London–Edinburgh in miles; a live quiz runs its own route, one position per station.
+const MILES={stops:ROUTE,total:TOTAL,dist:mi=>D(Math.min(mi,TOTAL))+' / '+D(TOTAL)+' '+UL()};
+const stopsLine=names=>({stops:names.map((n,i)=>[n,i]),total:names.length-1,dist:k=>Math.min(k,names.length-1)+' / '+(names.length-1)+' stations'});
+const ends=L=>[L.stops[0][0],L.stops[L.stops.length-1][0]];
+const stationAt=(mi,L=MILES)=>{let s=L.stops[0][0];for(const [n,m] of L.stops)if(mi>=m)s=n;return s};
+const nextStation=(mi,L=MILES)=>(L.stops.find(([n,m])=>m>mi)||[''])[0];
 // Each player's train gets its own livery, picked from their id.
 const LIVERY=['#c2412d','#1d5a43','#2f6bd3','#e8a631','#7a52c0','#16907c','#b8336a','#5b6b1f','#0f6e8c','#9a5b2b'];
 const livery=id=>{const p=MP&&MP.room&&(MP.room.players||[]).find(x=>x.id===id);if(p&&p.c!=null)return LIVERY[p.c%LIVERY.length];let h=0;for(const c of String(id||''))h=Math.imul(31,h)+c.charCodeAt(0)|0;return LIVERY[Math.abs(h)%LIVERY.length]};
 // Position along a rail (0 = London, 1 = Edinburgh), keeping the whole train inside the rail.
 const at=f=>`calc(28px + (100% - 56px) * ${Math.max(0,Math.min(1,f))})`;
 const locoSVG=(c='#c2412d')=>`<svg class="loco" viewBox="0 0 64 34" aria-hidden="true"><g class="lb"><rect x="2" y="5" width="22" height="5" rx="1.5" fill="var(--edge)"/><rect x="4" y="9" width="18" height="17" rx="2" fill="${c}"/><rect x="8" y="12" width="9" height="7" rx="1" fill="#fff6dc"/><rect x="20" y="13" width="34" height="13" rx="6" fill="${c}"/><rect x="43" y="4" width="7" height="10" rx="1" fill="var(--edge)"/><rect x="29" y="8" width="7" height="6" rx="3" fill="#e8a631"/><path d="M54 26h8l-4-7h-4z" fill="var(--edge)"/><circle cx="57" cy="16" r="2.6" fill="#ffd36b"/><circle cx="12" cy="28" r="5" fill="var(--edge)"/><circle cx="31" cy="29" r="4" fill="var(--edge)"/><circle cx="44" cy="29" r="4" fill="var(--edge)"/></g></svg>`;
-const trackHTML=(mi,c)=>{const p=Math.min(100,mi/TOTAL*100);return `<div class="track" role="img" aria-label="Train journey: ${D(Math.min(mi,TOTAL))} of ${D(TOTAL)} ${UL()} from London to Edinburgh"><div class="scene"></div>${ROUTE.map(([n,m])=>`<i class="stn" title="${n}" style="left:${at(m/TOTAL)}"></i>`).join('')}<b style="left:${at(p/100)}">${locoSVG(c)}</b></div><div class="ends"><span>London</span><span>${D(Math.min(mi,TOTAL))} / ${D(TOTAL)} ${UL()}</span><span>Edinburgh</span></div>`};
+const trackHTML=(mi,c,L=MILES)=>{const [a,z]=ends(L);return `<div class="track" role="img" aria-label="Train journey: ${esc(L.dist(mi))} from ${esc(a)} to ${esc(z)}"><div class="scene"></div>${L.stops.map(([n,m])=>`<i class="stn" title="${esc(n)}" style="left:${at(m/L.total)}"></i>`).join('')}<b style="left:${at(Math.min(mi,L.total)/L.total)}">${locoSVG(c)}</b></div><div class="ends"><span>${esc(a)}</span><span>${esc(L.dist(mi))}</span><span>${esc(z)}</span></div>`};
 const trainHTML=(res,all)=>`<div class='train' aria-label='Your train'>${locoSVG()}${res.map((r,i)=>`<span class='cx ${r.c}${all||i===res.length-1?' new':''}' style='animation-delay:${all?i*.15:0}s'></span>`).join('')}</div>`;
 
 // A train race round: every player gets the same questions from the room seed.
@@ -1344,7 +1349,7 @@ function mpHostScreen(){
  let subs=[];
  const info=()=>{const n=+$('#mq').value,ps=poolSize(subs);$('#minfo').textContent=subs.length?`${ps} questions available in ${subs.length} topic${subs.length>1?'s':''} · the game will have ${Math.min(n,ps)} questions.`:'Choose at least one topic above.';$('#mgo').disabled=!subs.length};
  pickerBind($('#pk'),s=>{subs=s;if($('#mq'))info()});bindRange('mq','',info);bindRange('mx','');
- const md=()=>{const live=$('#mm').value==='live';$('#mplw').style.display=live?'none':'flex';$('#mmd').textContent=live?'Show your screen to the class. Everybody answers the same question at the same time on their phone. Every player drives their own train: fast correct answers take it further towards Edinburgh.':'Everybody gets the same questions and drives their train at their own speed. The leaderboard updates live.'};
+ const md=()=>{const live=$('#mm').value==='live';$('#mplw').style.display=live?'none':'flex';$('#mmd').textContent=live?'Show your screen to the class. Everybody answers the same question at the same time on their phone. Every player drives their own train: each correct answer moves it one station, and fast answers earn bonus points.':'Everybody gets the same questions and drives their train at their own speed. The leaderboard updates live.'};
  $('#mm').onchange=md;md();
  $('#mbk').onclick=menu;
  $('#mgo').onclick=()=>{const name=$('#mn2').value.trim(),n=+$('#mq').value,max=+$('#mx').value;store('cc_name',name);store('cc_host',JSON.stringify({subs,n,max}));$('#merr').textContent='Connecting…';mpOpen({t:'create',name,theme:'M',sub:null,subs,mode:$('#mm').value,n,max,unit:$('#mu').value,play:$('#mpl').checked})};
@@ -1383,12 +1388,13 @@ function mpHostDraw(){
  $('#ag').onclick=()=>mpSend({t:'again'});$('#en').onclick=()=>mpSend({t:'end'});$('#lv2').onclick=mpLeave;
 }
 // Live quiz: the host's screen shows each question, players answer on their own devices and every player
-// drives their own train. The server keeps the time and the score; a perfect game (1000 per question)
-// reaches Edinburgh. Text from the server is always escaped.
+// drives their own train along the game's route. The server keeps the time and the score: every correct
+// answer moves a train one station, and fast answers earn bonus points. Text from the server is always escaped.
 let LIVE={};
 const ord=n=>n+(n%100>10&&n%100<14?'th':['th','st','nd','rd'][n%10]||'th');
-const liveMi=(score,n)=>Math.min(TOTAL,score/(1000*Math.max(1,n))*TOTAL);
-const where=mi=>mi>=TOTAL?'Arrived in Edinburgh':mi<1?'Waiting in London':'Near '+stationAt(mi);
+// The route comes with every live message; until the first question there is only the default line.
+const liveLine=m=>{if(m&&m.route)LIVE.line=stopsLine(m.route.stations);return LIVE.line||stopsLine(ROUTE.map(r=>r[0]))};
+const where=(k,L)=>{const [a,z]=ends(L);return k>=L.total?'Arrived in '+z:k<1?'Waiting in '+a:'At '+stationAt(k,L)};
 function liveList(){
  const r=MP.room,seed=MP.seed;if(LIVE.list&&LIVE.seed===seed)return LIVE.list;
  const rr=rng(seed),o={A1:0,A2:1,B1:2},pool=Q.filter(q=>r.subs&&r.subs.length?r.subs.includes(q.sub):r.sub?q.sub===r.sub:(r.theme==='M'||q.th===r.theme));
@@ -1403,7 +1409,7 @@ const plat=i=>`<span class="plat" aria-hidden="true"><small>Platform</small><b>$
 function liveBoarding(){const e=$('#bd'),m=LIVE.cur;if(!e||!m)return;const who=m.who||[];e.innerHTML=(MP.room.players||[]).map(p=>`<li class="${who.includes(p.id)?'on':''}">${esc(p.name)}</li>`).join('')||'<li>Nobody yet</li>'}
 function liveQuestion(m){
  clearInterval(timer);const now=performance.now();
- LIVE.cur=m;LIVE.go=now+m.wait;LIVE.end=now+m.left;LIVE.open=m.wait<=0;LIVE.mine=m.answered?null:undefined;LIVE.timeup=false;LIVE.pick=[];LIVE.seq=[];
+ liveLine(m);LIVE.cur=m;LIVE.go=now+m.wait;LIVE.end=now+m.left;LIVE.open=m.wait<=0;LIVE.mine=m.answered?null:undefined;LIVE.timeup=false;LIVE.pick=[];LIVE.seq=[];
  if(!LIVE.open)SFX.whistle();
  liveDraw();let lt=99;
  timer=setInterval(()=>{
@@ -1436,7 +1442,7 @@ function liveDraw(){
  else if(q.t==='multi')body=opts(true)+'<p class="mute">Choose ALL the correct platforms.</p><div class="row"><button class="main" id="lok">Send answer</button></div>';
  else if(q.t==='order')body='<div class="slot" id="seq" aria-label="Your answer"></div><div class="row" id="pool"></div><div class="row" style="margin-top:8px"><button class="main" id="lok">Send answer</button></div>';
  else body=`<input id="li" ${q.t==='num'?'type="number" inputmode="decimal"':'autocomplete="off" autocapitalize="none" spellcheck="false"'} aria-label="Your answer"><div class="row" style="margin-top:10px"><button class="main" id="lok">Send answer</button></div>`;
- const mine=pres?'':`<div class="myline">${trackHTML(liveMi(LIVE.myScore||0,m.n),livery(MP.id))}</div>`;
+ const mine=pres?'':`<div class="myline">${trackHTML(LIVE.myRight||0,livery(MP.id),liveLine())}</div>`;
  const board=pres?`<div class="card"><div class="section-kicker">Boarding</div><ul class="boarding" id="bd"></ul></div>`:'';
  app.innerHTML=`${head}<div class="bar"><i id="tb"></i></div>${mine}<div class="card ticket live">${title}${body}</div>${board}${liveCtl()}`;
  liveBindCtl();liveBoarding();liveClock(performance.now());
@@ -1455,28 +1461,28 @@ function liveDraw(){
  const li=$('#li');if(li){li.focus();const go=()=>{if(li.value.trim())liveAnswer(li.value.trim())};$('#lok').onclick=go;li.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();if(!e.repeat)go()}}}
 }
 // One lane per player: every train starts where it stopped last time and rolls to its new position.
-function liveLanes(list,n){
- const prev=LIVE.prev||{};
- return `<div class="lanes"><div class="lanehead" aria-hidden="true"><span>Driver</span><span><span>London</span><span>Edinburgh</span></span><span style="text-align:right">${UL()}</span></div>${list.map((p,i)=>{const from=liveMi(prev[p.id]||0,n),to=liveMi(p.score,n),gain=D(to)-D(from);
-  return `<div class="lane${p.id===MP.id?' me':''}"><span class="lname"><i>${i+1}</i>${esc(p.name)}</span><div class="lrail">${ROUTE.slice(1,-1).map(([s,m])=>`<i class="stn" style="left:${at(m/TOTAL)}"></i>`).join('')}<span class="ltrain" data-to="${to/TOTAL}" style="left:${at(from/TOTAL)}">${locoSVG(livery(p.id))}</span></div><span class="ld">${D(to)}${gain>0?`<small>+${gain}</small>`:''}</span></div>`}).join('')}</div>`;
+function liveLanes(list,L){
+ const prev=LIVE.prev||{},[a,z]=ends(L);
+ return `<div class="lanes"><div class="lanehead" aria-hidden="true"><span>Driver</span><span><span>${esc(a)}</span><span>${esc(z)}</span></span><span style="text-align:right">stations</span></div>${list.map((p,i)=>{const from=prev[p.id]||0,to=p.right,gain=to-from;
+  return `<div class="lane${p.id===MP.id?' me':''}"><span class="lname"><i>${i+1}</i>${esc(p.name)}</span><div class="lrail">${L.stops.slice(1,-1).map(([s,m])=>`<i class="stn" style="left:${at(m/L.total)}"></i>`).join('')}<span class="ltrain" data-to="${to/L.total}" style="left:${at(from/L.total)}">${locoSVG(livery(p.id))}</span></div><span class="ld">${to}${gain>0?`<small>+${gain}</small>`:''}</span></div>`}).join('')}</div>`;
 }
-function liveRoll(list){requestAnimationFrame(()=>requestAnimationFrame(()=>{app.querySelectorAll('.ltrain').forEach(t=>t.style.left=at(+t.dataset.to))}));LIVE.prev=Object.assign(LIVE.prev||{},Object.fromEntries(list.map(p=>[p.id,p.score])))}
-function liveBoard(list,n,title,sub){return `<div class="dboard"><h2>${title}<small>${sub||''}</small></h2>${list.map((p,i)=>{const mi=liveMi(p.score,n);return `<div class="drow top${p.id===MP.id?' me':''}"><span>${String(i+1).padStart(2,'0')}</span><span class="nm"><span>${esc(p.name)}${p.id===MP.id?' (you)':''}</span><span class="st">${esc(where(mi))}</span></span><b>${D(mi)} ${unit()}</b></div>`}).join('')||'<p>No players.</p>'}</div>`}
+function liveRoll(list){requestAnimationFrame(()=>requestAnimationFrame(()=>{app.querySelectorAll('.ltrain').forEach(t=>t.style.left=at(+t.dataset.to))}));LIVE.prev=Object.assign(LIVE.prev||{},Object.fromEntries(list.map(p=>[p.id,p.right])))}
+function liveBoard(list,L,title,sub){return `<div class="dboard"><h2>${esc(title)}<small>${sub||''}</small></h2>${list.map((p,i)=>`<div class="drow top${p.id===MP.id?' me':''}"><span>${String(i+1).padStart(2,'0')}</span><span class="nm"><span>${esc(p.name)}${p.id===MP.id?' (you)':''}</span><span class="st">${esc(where(p.right,L))} · ${p.score} points</span></span><b>${L.dist(p.right)}</b></div>`).join('')||'<p>No players.</p>'}</div>`}
 function liveReveal(m){
  clearInterval(timer);LIVE.cur=null;
- const q=m.q,me=m.me,last=m.i>=m.n-1,key=MP.round+'-'+m.i,c=me?(me.none||me.sc<.4?'bad':me.sc<.8?'mid':'good'):'';
+ const q=m.q,me=m.me,last=m.i>=m.n-1,key=MP.round+'-'+m.i,L=liveLine(m),c=me?(me.none||me.sc<.4?'bad':me.sc<.8?'mid':'good'):'';
  const fresh=LIVE.shown!==key;
  if(fresh){LIVE.shown=key;c==='good'?SFX.good():c==='mid'?SFX.mid():c==='bad'?SFX.bad():0;SFX.clack(3)}
  let res='';
  if(me){
-  const from=liveMi(fresh?me.prev:me.score,m.n),to=liveMi(me.score,m.n),gain=D(to)-D(liveMi(me.prev,m.n));LIVE.myScore=me.score;
-  res=`<div class="card lres ${c}"><div class="lbig">${me.none?'⏱ No answer':c==='good'?'✔ Correct!':c==='mid'?'◑ Nearly!':'✘ Not this time'}</div><p class="lpts">+${gain} ${UL()}${me.bonus?` · 🔥 streak`:''}</p><div class="myline">${trackHTML(from,livery(MP.id))}</div><p>You are <b>${ord(me.rank)}</b> of ${me.of}. ${to>=TOTAL?'<b>You have arrived in Edinburgh!</b>':`Next stop: <b>${esc(nextStation(to))}</b>.`}${me.streak>1?` 🔥 ${me.streak} in a row`:''}</p></div>`;
-  if(fresh)setTimeout(()=>adv(to),300);
+  const from=fresh?me.prevRight:me.right,to=me.right,gain=me.right-me.prevRight,pts=me.pts+me.bonus;LIVE.myRight=me.right;
+  res=`<div class="card lres ${c}"><div class="lbig">${me.none?'⏱ No answer':c==='good'?'✔ Correct!':c==='mid'?'◑ Nearly!':'✘ Not this time'}</div><p class="lpts">+${gain} station${gain===1?'':'s'} · +${pts} points${me.bonus?` · 🔥 streak`:''}</p><div class="myline">${trackHTML(from,livery(MP.id),L)}</div><p>You are <b>${ord(me.rank)}</b> of ${me.of}. ${to>=L.total?`<b>You have arrived in ${esc(ends(L)[1])}!</b>`:`Next stop: <b>${esc(nextStation(to,L))}</b>.`}${me.streak>1?` 🔥 ${me.streak} in a row`:''}</p></div>`;
+  if(fresh)setTimeout(()=>adv(to,L),300);
  }
  const tot=Math.max(1,...(m.dist||[0])),ok=i=>Array.isArray(m.correct.a)?m.correct.a.includes(i):m.correct.a===i;
  const dist=m.dist?`<div class="ldist">${q.o.map((o,i)=>`<div class="ldrow${ok(i)?' ok':''}">${plat(i)}<span class="ldl">${esc(o)}${ok(i)?' ✔':''}<span class="ldbar" style="width:${Math.round(100*m.dist[i]/tot)}%"></span></span><b>${m.dist[i]}</b></div>`).join('')}</div>`:'';
  const answer=`<div class="card"><p class="mute" style="margin-top:0">${esc(q.q)}</p><div class="section-kicker">Correct answer</div><h2>${esc(m.correct.text)}</h2>${dist}</div>`;
- const line=MP.spec?`<div class="card"><div class="section-kicker">The line · after stop ${m.i+1} of ${m.n}</div><h2>Where are the trains?</h2>${liveLanes(m.top,m.n)}</div>`:liveBoard(m.top.slice(0,5),m.n,'Leaders','after stop '+(m.i+1));
+ const line=MP.spec?`<div class="card"><div class="section-kicker">The line · after stop ${m.i+1} of ${m.n}</div><h2>Where are the trains?</h2>${liveLanes(m.top,L)}</div>`:liveBoard(m.top.slice(0,5),L,'Leaders','after stop '+(m.i+1));
  app.innerHTML=`<div class="live-top"><span class="lv">${esc(q.lv)}</span>Stop ${m.i+1} of ${m.n}<span class="lcount">${m.count} / ${m.of} answered</span></div>${res}${MP.spec?line+answer:answer+line}
  <div class="row">${MP.host?`<button class="main" id="lnx">${last?'Show the arrivals board 🏁':'Next stop →'}</button>${last?'':'<button id="len">End game</button>'}`:'<p class="mute">Waiting for the host…</p>'}</div>`;
  if(MP.spec)liveRoll(m.top);
@@ -1485,13 +1491,12 @@ function liveReveal(m){
 }
 function livePodium(m){
  clearInterval(timer);LIVE.cur=null;
- const b=m.board,k=b.findIndex(p=>p.id===MP.id),me=b[k],key='final-'+MP.round;
+ const b=m.board,k=b.findIndex(p=>p.id===MP.id),me=b[k],key='final-'+MP.round,L=liveLine(m);
  if(LIVE.shown!==key){LIVE.shown=key;SFX.fanfare();confetti()}
- const mi=me?liveMi(me.score,m.n):0;
  app.innerHTML=`<div class="section-kicker">⚡ Live quiz · room ${esc(MP.code)}</div><h1>Arrivals</h1>
- ${me?`<div class="card lres good"><div class="lbig">You finished ${ord(k+1)}</div><p class="lpts">${D(mi)} ${UL()} · ${me.right} of ${m.n} correct</p><div class="myline">${trackHTML(mi,livery(MP.id))}</div><p>${esc(where(mi))}.</p></div>`:''}
- ${MP.spec?`<div class="card"><div class="section-kicker">The line · final positions</div><h2>Every train</h2>${liveLanes(b.slice(0,12),m.n)}</div>`:''}
- ${liveBoard(b,m.n,'Arrivals · Edinburgh',b.length+' trains')}
+ ${me?`<div class="card lres good"><div class="lbig">You finished ${ord(k+1)}</div><p class="lpts">${me.right} of ${m.n} stations · ${me.score} points</p><div class="myline">${trackHTML(me.right,livery(MP.id),L)}</div><p>${esc(where(me.right,L))}.</p></div>`:''}
+ ${MP.spec?`<div class="card"><div class="section-kicker">The line · final positions</div><h2>Every train</h2>${liveLanes(b.slice(0,12),L)}</div>`:''}
+ ${liveBoard(b,L,'Arrivals · '+ends(L)[1],b.length+' trains')}
  <div class="row">${MP.host?'<button class="main" id="ag">Play again</button>':''}<button id="lv2">Leave room</button></div>`;
  if(MP.spec)liveRoll(b.slice(0,12));
  if($('#ag'))$('#ag').onclick=()=>mpSend({t:'again'});$('#lv2').onclick=mpLeave;
@@ -1520,7 +1525,7 @@ function menu(){
  app.innerHTML=`<header class="masthead"><div class="eyebrow">Platform A1–B1 · English practice</div><h1>Clickety-Clack</h1><p class="subtitle">A little practice. A longer journey. Build your English from A1 to B1, one station at a time.</p><div class="mast-rail" aria-hidden="true"><div class="mast-train"><i></i><i></i><i></i>${locoSVG('#c2412d')}</div></div></header>
  <section class="card"><div class="section-kicker">Play together</div><h2>Multiplayer</h2><p class="mute">⚡ Live quiz: show the questions on your screen, everybody answers on their phone and every player drives their own train. Or start a 🚂 train race where everyone plays at their own speed.</p><div class="row"><button class="main" id="mph">Host a game</button><button id="mpj">Join with a code</button></div></section>
  <section class="card"><div class="section-kicker">Settings</div><h2>Distance</h2><p class="mute">Show your journey in miles or kilometres.</p><div class="unit-pick" role="group" aria-label="Distance unit"><button data-u="mi" aria-pressed="${u==='mi'}">Miles</button><button data-u="km" aria-pressed="${u==='km'}">Kilometres</button></div><h2 style="margin-top:20px">Sound</h2>${rangeHTML('vol','Volume',0,100,Math.round(VOL()*100),'%')}<p class="mute">Sound effects and spoken questions. You can also point at the 🔊 button in the top corner to change the volume on any screen, or click it to turn sound off and on.</p></section>
- <details class="card details-card"><summary>How to play</summary><ul><li>The host chooses the topics and the number of questions (3–30), from A1 to B1.</li><li>Correct answers move your train and add carriages; quick answers and streaks can earn bonus distance.</li><li>London to Edinburgh is ${D(TOTAL)} ${UL()}. Can you get the train all the way there?</li></ul></details>`;
+ <details class="card details-card"><summary>How to play</summary><ul><li>The host chooses the topics and the number of questions (3–30), from A1 to B1.</li><li>Live quiz: every correct answer moves your train one station along the game’s route. Fast answers and streaks earn bonus points, which decide between trains at the same station.</li><li>Train race: correct answers move your train and add carriages, and quick answers and streaks earn bonus distance. London to Edinburgh is ${D(TOTAL)} ${UL()}.</li></ul></details>`;
  app.querySelectorAll('[data-u]').forEach(b=>b.onclick=()=>{store('cc_unit',b.dataset.u);SFX.click();menu()});
  bindRange('vol','%');$('#vol').oninput=e=>setVol(+e.target.value);$('#vol').onchange=()=>SFX.good();
  $('#mph').onclick=mpHostScreen;$('#mpj').onclick=()=>mpJoinScreen('');
