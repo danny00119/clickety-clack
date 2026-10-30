@@ -262,6 +262,17 @@ div.lopt{cursor:default}
 .lane .ld{font:700 .95rem var(--fm);text-align:right;white-space:nowrap}
 .lane .ld small{display:block;font-size:.66rem;color:var(--good)}
 .myline .track{margin-top:6px}
+/* Podium: three platforms, the winner's in the middle and highest */
+.podium{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;align-items:end;margin:18px 0 22px}
+.pod{display:flex;flex-direction:column;align-items:center;gap:6px;min-width:0}
+.pod-who{display:flex;flex-direction:column;align-items:center;text-align:center;min-width:0;max-width:100%;animation:rise .5s both}
+.pod-who b{font:800 1.15rem/1.2 var(--fb);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
+.pod-who small{font:400 .72rem var(--fm);color:var(--mute)}
+.pod-step{width:100%;display:grid;place-items:center;background:var(--green);color:var(--on-green);border:2px solid var(--edge);border-radius:6px 6px 0 0;box-shadow:var(--sh)}
+.pod-step b{font:900 2.6rem/1 var(--fd)}
+.p1 .pod-step{height:150px;background:var(--brass);color:var(--on-brass)}.p2 .pod-step{height:110px}.p3 .pod-step{height:80px}
+.p2 .pod-who{animation-delay:.3s}.p1 .pod-who{animation-delay:.6s}
+@media(max-width:480px){.pod-step b{font-size:2rem}.p1 .pod-step{height:110px}.p2 .pod-step{height:80px}.p3 .pod-step{height:60px}}
 
 /* --- Animations --- */
 @keyframes shake{20%,60%{transform:translateX(-7px)}40%,80%{transform:translateX(7px)}}
@@ -1294,6 +1305,7 @@ function mpMsg(m){
  if(m.t==='lack'){if(LIVE.cur&&LIVE.cur.i===m.i&&LIVE.mine===undefined){LIVE.mine=null;liveDraw()}return}
  if(m.t==='lcount'){if(LIVE.cur&&LIVE.cur.i===m.i){Object.assign(LIVE.cur,{count:m.count,of:m.of,who:m.who});const e=$('#lc');if(e)e.textContent=m.count+' / '+m.of+' answered';liveBoarding()}return}
  if(m.t==='lreveal'){if(MP)liveReveal(m);return}
+ if(m.t==='lbonus'){if(MP)liveBonus(m);return}
  if(m.t==='lfinal'){if(MP)livePodium(m);return}
  if(m.t==='start'){if(!MP||!MP.room||MP.round===m.round)return;Object.assign(MP.room,{state:'playing',round:m.round,seed:m.seed,theme:m.theme,sub:m.sub});MP.spec?mpHostBoard():mpBegin(MP.room);return}
  if(m.t==='lobby'){if(!MP)return;MP.room=m.room;MP.round=null;LIVE={};clearInterval(timer);S=null;mpLobby();return}
@@ -1398,14 +1410,20 @@ const where=(k,L)=>{const [a,z]=ends(L);return k>=L.total?'Arrived in '+z:k<1?'W
 function liveList(){
  const r=MP.room,seed=MP.seed;if(LIVE.list&&LIVE.seed===seed)return LIVE.list;
  const rr=rng(seed),o={A1:0,A2:1,B1:2},pool=Q.filter(q=>r.subs&&r.subs.length?r.subs.includes(q.sub):r.sub?q.sub===r.sub:(r.theme==='M'||q.th===r.theme));
- LIVE.seed=seed;LIVE.list=shuffle(pool,rr).slice(0,r.n).map(q=>scrambleQuestion(q,rr)).sort((a,b)=>o[a.lv]-o[b.lv]);
+ const all=shuffle(pool,rr);
+ LIVE.seed=seed;LIVE.list=all.slice(0,r.n).map(q=>scrambleQuestion(q,rr)).sort((a,b)=>o[a.lv]-o[b.lv]);
+ // Bonus round: the next questions in the shuffled pool, or the game's own questions if the pool runs out.
+ LIVE.extra=[...all.slice(r.n),...all.slice(0,r.n)].slice(0,3).map(q=>scrambleQuestion(q,rr));
  return LIVE.list;
 }
-function liveSend(i){if(!MP.seed)return;const L=liveList(),q=L[i];if(q)mpSend({t:'lq',i,n:L.length,time:TIME[q.t],q:{t:q.t,lv:q.lv,sub:q.sub,q:q.q,o:q.o,a:q.a,alt:q.alt,s:q.s}})}
+function liveSend(i){if(!MP.seed)return;const L=liveList(),q=i<L.length?L[i]:LIVE.extra[i-L.length];if(q)mpSend({t:'lq',i,n:L.length,time:TIME[q.t],q:{t:q.t,lv:q.lv,sub:q.sub,q:q.q,o:q.o,a:q.a,alt:q.alt,s:q.s}})}
 function liveHold(msg){clearInterval(timer);app.innerHTML=`<div class="section-kicker">⚡ Live quiz · room ${esc(MP.code||'')}</div><div class="card lwait">${locoSVG(MP.spec?'#c2412d':livery(MP.id))}<b>${esc(msg)}</b><p class="mute">${MP.spec?'Show this screen to everybody.':'Keep this page open.'}</p></div>`}
 function liveCtl(){return MP.host?`<div class="row"><button id="lsk">Skip ⏭</button><button id="len">End game</button></div>`:''}
 function liveBindCtl(){if($('#lsk'))$('#lsk').onclick=()=>mpSend({t:'skip'});if($('#len'))$('#len').onclick=()=>{if(confirm('End the game now and show the arrivals board?'))mpSend({t:'end'})}}
 const plat=i=>`<span class="plat" aria-hidden="true"><small>Platform</small><b>${i+1}</b></span>`;
+const isBonus=m=>m.i>=m.n;
+const stopLabel=m=>isBonus(m)?'Bonus question '+(m.i-m.n+1)+' of '+m.nb:'Stop '+(m.i+1)+' of '+m.n;
+const placeOf=(b,p)=>ord(p.place)+(b.filter(x=>x.place===p.place).length>1?' (shared)':'');
 function liveBoarding(){const e=$('#bd'),m=LIVE.cur;if(!e||!m)return;const who=m.who||[];e.innerHTML=(MP.room.players||[]).map(p=>`<li class="${who.includes(p.id)?'on':''}">${esc(p.name)}</li>`).join('')||'<li>Nobody yet</li>'}
 function liveQuestion(m){
  clearInterval(timer);const now=performance.now();
@@ -1418,7 +1436,7 @@ function liveQuestion(m){
   liveClock(t);
   const left=Math.max(0,LIVE.end-t)/1000;
   if(LIVE.open&&left<=5&&left>0&&Math.ceil(left)!==lt){lt=Math.ceil(left);SFX.tick()}
-  if(LIVE.open&&left<=0&&!MP.spec&&LIVE.mine===undefined&&!LIVE.timeup){LIVE.timeup=true;liveDraw()}
+  if(LIVE.open&&left<=0&&!MP.spec&&!m.out&&LIVE.mine===undefined&&!LIVE.timeup){LIVE.timeup=true;liveDraw()}
  },100);
 }
 function liveClock(t){
@@ -1430,11 +1448,12 @@ function liveClock(t){
 function liveAnswer(a){if(LIVE.mine!==undefined||LIVE.timeup)return;LIVE.mine=a;SFX.click();mpSend({t:'ans',i:LIVE.cur.i,a});liveDraw()}
 function liveDraw(){
  const m=LIVE.cur;if(!m)return;const q=m.q,pres=MP.spec,lab=SUBLABEL[q.sub]?' · '+SUBLABEL[q.sub]:'';
- const head=`<div class="live-top"><span class="lv">${esc(q.lv)}</span>Stop ${m.i+1} of ${m.n}${esc(lab)}<span class="lcount" id="lc">${m.count} / ${m.of} answered</span></div>`;
+ const head=`<div class="live-top"><span class="lv">${esc(q.lv)}</span>${stopLabel(m)}${esc(lab)}<span class="lcount" id="lc">${m.count} / ${m.of} answered</span></div>`;
  const title=`<div class="lclock" id="lt" role="timer" aria-label="Seconds left"><b></b></div><h2>${esc(q.q)}${TTS?' <button class="chip lis" id="ls" aria-label="Listen to the question">🔊</button>':''}</h2>`;
  const opts=click=>`<div class="lopts">${q.o.map((o,i)=>`<${click?'button':'div'} class="lopt${LIVE.pick.includes(i)?' on':''}" data-i="${i}"${click&&q.t==='multi'?` aria-pressed="${LIVE.pick.includes(i)}"`:''}>${plat(i)}<span class="txt">${esc(o)}</span></${click?'button':'div'}>`).join('')}</div>`;
  let body;
  if(!LIVE.open)body='<p class="lready">Get ready…</p>';
+ else if(m.out)body='<div class="lwait"><b>Bonus round</b><p class="mute">The players tied for a podium place are answering. Watch the screen.</p></div>';
  else if(pres)body=q.o?opts(false)+(q.t==='multi'?'<p class="mute">Choose ALL the correct platforms.</p>':''):q.t==='order'?`<div class="row">${q.words.map(w=>`<span class="chip lword">${esc(w)}</span>`).join('')}</div><p class="mute">Put the words in order on your device.</p>`:`<p class="mute">${q.t==='num'?'Write a number':'Type the answer'} on your device.</p>`;
  else if(LIVE.mine!==undefined)body=`<div class="lwait">${locoSVG(livery(MP.id))}<b>✓ All aboard!</b><p class="mute">Answer sent. Waiting for the others…</p></div>`;
  else if(LIVE.timeup)body='<div class="lwait"><b>⏱ Time’s up!</b><p class="mute">Waiting for the results…</p></div>';
@@ -1447,7 +1466,7 @@ function liveDraw(){
  app.innerHTML=`${head}<div class="bar"><i id="tb"></i></div>${mine}<div class="card ticket live">${title}${body}</div>${board}${liveCtl()}`;
  liveBindCtl();liveBoarding();liveClock(performance.now());
  if($('#ls'))$('#ls').onclick=()=>speak(q.q);
- if(pres||!LIVE.open||LIVE.mine!==undefined||LIVE.timeup)return;
+ if(pres||m.out||!LIVE.open||LIVE.mine!==undefined||LIVE.timeup)return;
  if(q.t==='mc')app.querySelectorAll('.lopt').forEach(b=>b.onclick=()=>liveAnswer(+b.dataset.i));
  if(q.t==='multi'){app.querySelectorAll('.lopt').forEach(b=>b.onclick=()=>{SFX.click();const i=+b.dataset.i,k=LIVE.pick.indexOf(i);k<0?LIVE.pick.push(i):LIVE.pick.splice(k,1);b.classList.toggle('on',k<0);b.setAttribute('aria-pressed',k<0)});$('#lok').onclick=()=>liveAnswer(LIVE.pick.slice())}
  if(q.t==='order'){
@@ -1467,14 +1486,15 @@ function liveLanes(list,L){
   return `<div class="lane${p.id===MP.id?' me':''}"><span class="lname"><i>${i+1}</i>${esc(p.name)}</span><div class="lrail">${L.stops.slice(1,-1).map(([s,m])=>`<i class="stn" style="left:${at(m/L.total)}"></i>`).join('')}<span class="ltrain" data-to="${to/L.total}" style="left:${at(from/L.total)}">${locoSVG(livery(p.id))}</span></div><span class="ld">${to}${gain>0?`<small>+${gain}</small>`:''}</span></div>`}).join('')}</div>`;
 }
 function liveRoll(list){requestAnimationFrame(()=>requestAnimationFrame(()=>{app.querySelectorAll('.ltrain').forEach(t=>t.style.left=at(+t.dataset.to))}));LIVE.prev=Object.assign(LIVE.prev||{},Object.fromEntries(list.map(p=>[p.id,p.right])))}
-function liveBoard(list,L,title,sub){return `<div class="dboard"><h2>${esc(title)}<small>${sub||''}</small></h2>${list.map((p,i)=>`<div class="drow top${p.id===MP.id?' me':''}"><span>${String(i+1).padStart(2,'0')}</span><span class="nm"><span>${esc(p.name)}${p.id===MP.id?' (you)':''}</span><span class="st">${esc(where(p.right,L))} · ${p.score} points</span></span><b>${L.dist(p.right)}</b></div>`).join('')||'<p>No players.</p>'}</div>`}
+function liveBoard(list,L,title,sub){return `<div class="dboard"><h2>${esc(title)}<small>${sub||''}</small></h2>${list.map((p,i)=>`<div class="drow top${p.id===MP.id?' me':''}"><span>${String(p.place||i+1).padStart(2,'0')}</span><span class="nm"><span>${esc(p.name)}${p.id===MP.id?' (you)':''}</span><span class="st">${esc(where(p.right,L))} · ${p.score} points${p.tb?' · bonus round '+p.tb.right+' correct':''}</span></span><b>${L.dist(p.right)}</b></div>`).join('')||'<p>No players.</p>'}</div>`}
 function liveReveal(m){
  clearInterval(timer);LIVE.cur=null;
- const q=m.q,me=m.me,last=m.i>=m.n-1,key=MP.round+'-'+m.i,L=liveLine(m),c=me?(me.none||me.sc<.4?'bad':me.sc<.8?'mid':'good'):'';
+ const q=m.q,me=m.me,B=isBonus(m),last=m.i>=m.n+(m.nb||0)-1,key=MP.round+'-'+m.i,L=liveLine(m),c=me?(me.none||me.sc<.4?'bad':me.sc<.8?'mid':'good'):'';
  const fresh=LIVE.shown!==key;
  if(fresh){LIVE.shown=key;c==='good'?SFX.good():c==='mid'?SFX.mid():c==='bad'?SFX.bad():0;SFX.clack(3)}
  let res='';
- if(me){
+ if(me&&B)res=`<div class="card lres ${c}"><div class="lbig">${me.none?'⏱ No answer':c==='good'?'✔ Correct!':c==='mid'?'◑ Nearly!':'✘ Not this time'}</div><p class="lpts">Bonus round: ${me.tb.right} of ${m.i-m.n+1} correct</p></div>`;
+ else if(me){
   const from=fresh?me.prevRight:me.right,to=me.right,gain=me.right-me.prevRight,pts=me.pts+me.bonus;LIVE.myRight=me.right;
   res=`<div class="card lres ${c}"><div class="lbig">${me.none?'⏱ No answer':c==='good'?'✔ Correct!':c==='mid'?'◑ Nearly!':'✘ Not this time'}</div><p class="lpts">+${gain} station${gain===1?'':'s'} · +${pts} points${me.bonus?` · 🔥 streak`:''}</p><div class="myline">${trackHTML(from,livery(MP.id),L)}</div><p>You are <b>${ord(me.rank)}</b> of ${me.of}. ${to>=L.total?`<b>You have arrived in ${esc(ends(L)[1])}!</b>`:`Next stop: <b>${esc(nextStation(to,L))}</b>.`}${me.streak>1?` 🔥 ${me.streak} in a row`:''}</p></div>`;
   if(fresh)setTimeout(()=>adv(to,L),300);
@@ -1482,19 +1502,39 @@ function liveReveal(m){
  const tot=Math.max(1,...(m.dist||[0])),ok=i=>Array.isArray(m.correct.a)?m.correct.a.includes(i):m.correct.a===i;
  const dist=m.dist?`<div class="ldist">${q.o.map((o,i)=>`<div class="ldrow${ok(i)?' ok':''}">${plat(i)}<span class="ldl">${esc(o)}${ok(i)?' ✔':''}<span class="ldbar" style="width:${Math.round(100*m.dist[i]/tot)}%"></span></span><b>${m.dist[i]}</b></div>`).join('')}</div>`:'';
  const answer=`<div class="card"><p class="mute" style="margin-top:0">${esc(q.q)}</p><div class="section-kicker">Correct answer</div><h2>${esc(m.correct.text)}</h2>${dist}</div>`;
- const line=MP.spec?`<div class="card"><div class="section-kicker">The line · after stop ${m.i+1} of ${m.n}</div><h2>Where are the trains?</h2>${liveLanes(m.top,L)}</div>`:liveBoard(m.top.slice(0,5),L,'Leaders','after stop '+(m.i+1));
- app.innerHTML=`<div class="live-top"><span class="lv">${esc(q.lv)}</span>Stop ${m.i+1} of ${m.n}<span class="lcount">${m.count} / ${m.of} answered</span></div>${res}${MP.spec?line+answer:answer+line}
- <div class="row">${MP.host?`<button class="main" id="lnx">${last?'Show the arrivals board 🏁':'Next stop →'}</button>${last?'':'<button id="len">End game</button>'}`:'<p class="mute">Waiting for the host…</p>'}</div>`;
- if(MP.spec)liveRoll(m.top);
+ const tb=B&&m.tb?`<div class="dboard"><h2>Bonus round<small>after question ${m.i-m.n+1} of ${m.nb}</small></h2>${m.tb.slice().sort((a,b)=>b.right-a.right||a.ms-b.ms).map((t,i)=>{const p=(MP.room.players||[]).find(x=>x.id===t.id);return `<div class="drow${t.id===MP.id?' me':''}"><span>${i+1}</span><span class="nm"><span>${esc(p?p.name:'')}</span><span class="st">${(t.ms/1000).toFixed(1)} s</span></span><b>${t.right} correct</b></div>`}).join('')}</div>`:'';
+ const line=B?tb:MP.spec?`<div class="card"><div class="section-kicker">The line · after stop ${m.i+1} of ${m.n}</div><h2>Where are the trains?</h2>${liveLanes(m.top,L)}</div>`:liveBoard(m.top.slice(0,5),L,'Leaders','after stop '+(m.i+1));
+ app.innerHTML=`<div class="live-top"><span class="lv">${esc(q.lv)}</span>${stopLabel(m)}<span class="lcount">${m.count} / ${m.of} answered</span></div>${res}${MP.spec?line+answer:answer+line}
+ <div class="row">${MP.host?`<button class="main" id="lnx">${last?'Show the arrivals board 🏁':B?'Next bonus question →':'Next stop →'}</button>${last?'':'<button id="len">End game</button>'}`:'<p class="mute">Waiting for the host…</p>'}</div>`;
+ if(MP.spec&&!B)liveRoll(m.top);
  if($('#lnx')){$('#lnx').onclick=()=>{$('#lnx').disabled=true;last?mpSend({t:'end'}):liveSend(m.i+1)};$('#lnx').focus()}
  liveBindCtl();
+}
+function liveBonus(m){
+ clearInterval(timer);LIVE.cur=null;liveLine(m);
+ const t=m.tied,places=[...new Set(t.map(p=>p.place))];
+ const who=places.map(k=>`<p><b>Tied for ${ord(k)} place:</b> ${t.filter(p=>p.place===k).map(p=>esc(p.name)).join(', ')}</p>`).join('');
+ const rule=`<p class="mute">${m.nb} bonus questions. More correct answers wins; with the same number, the faster player wins. Trains and points do not change.</p>`;
+ const mine=t.find(p=>p.id===MP.id);
+ app.innerHTML=`<div class="section-kicker">⚡ Live quiz · room ${esc(MP.code)}</div><h1>Bonus round</h1>
+ ${m.me&&mine?`<div class="card lres mid"><div class="lbig">You’re in the bonus round!</div><p>You are tied for <b>${ord(mine.place)}</b> place.</p></div>`:''}
+ <div class="card">${who}${rule}</div>
+ <div class="row">${MP.host?'<button class="main" id="lbs">Start the bonus round →</button><button id="len">End game</button>':`<p class="mute">${m.me?'Get ready…':'Watch the screen.'}</p>`}</div>`;
+ if(!LIVE.bonusShown){LIVE.bonusShown=1;SFX.whistle()}
+ if($('#lbs')){$('#lbs').onclick=()=>{$('#lbs').disabled=true;liveSend(m.n)};$('#lbs').focus()}
+ liveBindCtl();
+}
+// Places 1–3 on platforms (2nd, 1st, 3rd), every player who has that place on the same platform.
+function podiumHTML(b,L){
+ return `<div class="podium">${[2,1,3].map(k=>`<div class="pod p${k}">${b.filter(p=>p.place===k).map(p=>`<div class="pod-who">${locoSVG(livery(p.id))}<b>${esc(p.name)}</b><small>${L.dist(p.right)} · ${p.score} points</small></div>`).join('')}<div class="pod-step"><b>${k}</b></div></div>`).join('')}</div>`;
 }
 function livePodium(m){
  clearInterval(timer);LIVE.cur=null;
  const b=m.board,k=b.findIndex(p=>p.id===MP.id),me=b[k],key='final-'+MP.round,L=liveLine(m);
  if(LIVE.shown!==key){LIVE.shown=key;SFX.fanfare();confetti()}
  app.innerHTML=`<div class="section-kicker">⚡ Live quiz · room ${esc(MP.code)}</div><h1>Arrivals</h1>
- ${me?`<div class="card lres good"><div class="lbig">You finished ${ord(k+1)}</div><p class="lpts">${me.right} of ${m.n} stations · ${me.score} points</p><div class="myline">${trackHTML(me.right,livery(MP.id),L)}</div><p>${esc(where(me.right,L))}.</p></div>`:''}
+ ${podiumHTML(b,L)}
+ ${me?`<div class="card lres good"><div class="lbig">You finished ${esc(placeOf(b,me))}</div><p class="lpts">${me.right} of ${m.n} stations · ${me.score} points</p><div class="myline">${trackHTML(me.right,livery(MP.id),L)}</div><p>${esc(where(me.right,L))}.</p></div>`:''}
  ${MP.spec?`<div class="card"><div class="section-kicker">The line · final positions</div><h2>Every train</h2>${liveLanes(b.slice(0,12),L)}</div>`:''}
  ${liveBoard(b,L,'Arrivals · '+ends(L)[1],b.length+' trains')}
  <div class="row">${MP.host?'<button class="main" id="ag">Play again</button>':''}<button id="lv2">Leave room</button></div>`;

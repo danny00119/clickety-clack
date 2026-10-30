@@ -23,7 +23,7 @@ const rid = () => crypto.randomBytes(6).toString('hex');
 
 // Live quiz (Kahoot-style): the host's browser sends one question at a time (with its answer),
 // the server keeps the clock, scores every answer and sends players the question without the answer.
-const LIVE_TYPES = ['mc', 'multi', 'type', 'num', 'order'], LEAD = 3000;
+const LIVE_TYPES = ['mc', 'multi', 'type', 'num', 'order'], LEAD = 3000, BONUS_N = 3;
 const norm = s => String(s).toLowerCase().trim().replace(/[^a-z0-9 ]/g, '').replace(/\s+/g, ' ');
 function lev(a, b) { const d = []; for (let i = 0; i <= a.length; i++) { d[i] = [i]; for (let j = 1; j <= b.length; j++) d[i][j] = i ? 0 : j; } for (let i = 1; i <= a.length; i++) for (let j = 1; j <= b.length; j++) d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1)); return d[a.length][b.length]; }
 // Same rules as score() in public/index.html.
@@ -64,30 +64,54 @@ function cleanAns(q, a) {
   return Array.isArray(a) && a.length <= 20 && a.every(s => typeof s === 'string') ? a.map(s => s.slice(0, 30)) : null;
 }
 const active = r => [...r.players.values()].filter(p => !p.spec);
-const answeredIds = r => active(r).filter(p => p.ans).map(p => p.id);
+// Bonus round: when players share a podium place at the end, they answer BONUS_N more questions (L.i >= L.n).
+// Only they answer; trains and points do not change. L.bonus.res[id] = { right, ms } decides their order.
+const inBonus = L => !!(L && L.bonus && L.i >= L.n);
+const answering = r => inBonus(r.live) ? active(r).filter(p => r.live.bonus.res[p.id]) : active(r);
+const answeredIds = r => answering(r).filter(p => p.ans).map(p => p.id);
 // The furthest train leads (one station per correct answer); points from fast answers decide between trains at the same station.
 const byTrain = (a, b) => b.right - a.right || b.score - a.score;
 const liveBoard = r => active(r).map(p => ({ id: p.id, name: p.name, c: p.c, score: p.score, right: p.right, online: !!p.ws })).sort(byTrain);
+// Gives every board entry a place, sports style (1, 2, 2, 4): players share a place only when everything is equal.
+// After a bonus round its results (more correct, then less time) order the players who were tied.
+// Players who share a place are listed alphabetically.
+function placed(board, res) {
+  const key = p => { const b = res && res[p.id]; return [p.right, p.score, b ? b.right : -1, b ? -b.ms : 0]; };
+  const cmp = (a, b) => { const x = key(a), y = key(b); for (let i = 0; i < x.length; i++) if (x[i] !== y[i]) return y[i] - x[i]; return 0; };
+  board.sort((a, b) => cmp(a, b) || a.name.localeCompare(b.name));
+  board.forEach((p, i) => { p.place = i && cmp(board[i - 1], p) === 0 ? board[i - 1].place : i + 1; if (res && res[p.id]) p.tb = res[p.id]; });
+  return board;
+}
+// Players who share a place from 1st to 3rd.
+const podiumTies = board => board.filter(p => p.place <= 3 && board.some(q => q !== p && q.place === p.place)).map(p => p.id);
+const bonusBoard = L => Object.entries(L.bonus.res).map(([id, b]) => ({ id, right: b.right, ms: b.ms }));
 function sendQuestion(r, p) {
   const L = r.live, now = Date.now();
-  send(p.ws, { t: 'lq', i: L.i, n: L.n, route: L.route, q: L.pub, time: L.time, wait: Math.max(0, L.startAt - now), left: Math.max(0, L.endAt - now), answered: !!p.ans, count: L.count, of: active(r).length, who: answeredIds(r) });
+  send(p.ws, { t: 'lq', i: L.i, n: L.n, nb: L.bonus ? L.bonus.n : 0, out: inBonus(L) && !L.bonus.res[p.id], route: L.route, q: L.pub, time: L.time, wait: Math.max(0, L.startAt - now), left: Math.max(0, L.endAt - now), answered: !!p.ans, count: L.count, of: answering(r).length, who: answeredIds(r) });
 }
 function sendReveal(r, p) {
-  const L = r.live, k = L.board.findIndex(x => x.id === p.id), a = p.ans || { sc: 0, pts: 0, bonus: 0, none: true };
-  send(p.ws, { t: 'lreveal', i: L.i, n: L.n, route: L.route, q: L.pub, correct: { text: correctText(L.q), a: L.q.t === 'mc' || L.q.t === 'multi' ? L.q.a : null }, dist: L.dist, count: L.count, of: active(r).length, top: L.board.slice(0, 10),
-    me: k < 0 ? null : { sc: a.sc, pts: a.pts, bonus: a.bonus, none: !!a.none, score: p.score, prev: p.score - a.pts - a.bonus, right: p.right, prevRight: p.right - (a.sc >= 0.8 ? 1 : 0), streak: p.streak, rank: k + 1, of: L.board.length } });
+  const L = r.live, k = L.board.findIndex(x => x.id === p.id), a = p.ans || { sc: 0, pts: 0, bonus: 0, none: true }, B = inBonus(L);
+  const me = B ? (L.bonus.res[p.id] ? { sc: a.sc, none: !!a.none, tb: L.bonus.res[p.id] } : null)
+    : k < 0 ? null : { sc: a.sc, pts: a.pts, bonus: a.bonus, none: !!a.none, score: p.score, prev: p.score - a.pts - a.bonus, right: p.right, prevRight: p.right - (a.sc >= 0.8 ? 1 : 0), streak: p.streak, rank: k + 1, of: L.board.length };
+  send(p.ws, { t: 'lreveal', i: L.i, n: L.n, nb: L.bonus ? L.bonus.n : 0, route: L.route, q: L.pub, correct: { text: correctText(L.q), a: L.q.t === 'mc' || L.q.t === 'multi' ? L.q.a : null }, dist: L.dist, count: L.count, of: answering(r).length, top: L.board.slice(0, 10),
+    tb: B ? bonusBoard(L) : undefined, me });
 }
-const sendFinal = (r, p) => send(p.ws, { t: 'lfinal', board: r.live.board, n: r.live.n, route: r.live.route });
+const sendFinal = (r, p) => send(p.ws, { t: 'lfinal', board: r.live.board, n: r.live.n, nb: r.live.bonus ? r.live.bonus.n : 0, route: r.live.route });
+function sendBonus(r, p) {
+  const L = r.live, board = placed(liveBoard(r));
+  send(p.ws, { t: 'lbonus', n: L.n, nb: L.bonus.n, route: L.route, tied: board.filter(x => L.bonus.res[x.id]), me: !!L.bonus.res[p.id] });
+}
 function sendLive(r, p) {
   const L = r.live; if (r.mode !== 'live' || !L) return;
-  if (L.phase === 'question') sendQuestion(r, p); else if (L.phase === 'reveal') sendReveal(r, p); else if (L.phase === 'end') sendFinal(r, p);
+  if (L.phase === 'question') sendQuestion(r, p); else if (L.phase === 'reveal') sendReveal(r, p); else if (L.phase === 'bonus') sendBonus(r, p); else if (L.phase === 'end') sendFinal(r, p);
 }
 function reveal(r) {
   const L = r.live; if (!L || L.phase !== 'question') return;
   clearTimeout(L.timer); L.phase = 'reveal';
   const dist = L.q.o ? L.q.o.map(() => 0) : null;
-  for (const p of active(r)) {
-    if (!p.ans) { p.streak = 0; p.ans = { sc: 0, pts: 0, bonus: 0, none: true }; }
+  const B = inBonus(L);
+  for (const p of answering(r)) {
+    if (!p.ans) { if (B) L.bonus.res[p.id].ms += L.time * 1000; else p.streak = 0; p.ans = { sc: 0, pts: 0, bonus: 0, none: true }; }
     else if (dist && p.ans.a != null) (L.q.t === 'mc' ? [p.ans.a] : p.ans.a).forEach(i => { dist[i]++; });
   }
   L.dist = dist; L.board = liveBoard(r);
@@ -96,14 +120,25 @@ function reveal(r) {
 }
 function endLive(r) {
   const L = r.live; if (!L) return;
-  clearTimeout(L.timer); L.phase = 'end'; L.board = liveBoard(r); r.state = 'done';
+  clearTimeout(L.timer);
+  // A tie for a podium place goes to a bonus round first: only once, and only after at least one question.
+  if (!L.bonus && L.i >= 0) {
+    const ids = podiumTies(placed(liveBoard(r)));
+    if (ids.length) {
+      L.bonus = { n: BONUS_N, res: Object.fromEntries(ids.map(id => [id, { right: 0, ms: 0 }])) };
+      L.phase = 'bonus'; L.i = L.n - 1;
+      for (const p of r.players.values()) sendBonus(r, p);
+      return bcast(r);
+    }
+  }
+  L.phase = 'end'; L.board = placed(liveBoard(r), L.bonus && L.bonus.res); r.state = 'done';
   for (const p of r.players.values()) sendFinal(r, p);
   bcast(r);
 }
 // Close the question early once every connected player has answered.
 function checkAll(r) {
   const L = r.live; if (r.mode !== 'live' || !L || L.phase !== 'question') return;
-  const on = active(r).filter(p => p.ws);
+  const on = answering(r).filter(p => p.ws);
   if (on.length && on.every(p => p.ans)) reveal(r);
 }
 
@@ -137,7 +172,7 @@ function removePlayer(r, p) {
   if (p.ws) { p.ws.ctx = null; }
   if (!r.players.size) { dropRoom(r); return; }
   if (r.hostId === p.id) r.hostId = [...r.players.values()][0].id;
-  if (r.live && r.live.phase === 'question') r.live.count = active(r).filter(x => x.ans).length;
+  if (r.live && r.live.phase === 'question') r.live.count = answering(r).filter(x => x.ans).length;
   checkAll(r);
   bcast(r);
 }
@@ -191,7 +226,7 @@ function onMsg(ws, m) {
       const L = r.live, i = Number(m.i);
       if (L.phase === 'question' || L.phase === 'end' || i !== L.i + 1) return;
       if (i === 0) { L.n = Math.max(1, Math.min(r.n, int(m.n, 30))); L.route = pickRoute(L.n, k => crypto.randomInt(k)); }
-      if (i >= L.n) return;
+      if (i >= L.n + (L.bonus ? L.bonus.n : 0)) return;
       const q = cleanQ(m.q);
       if (!q) return err(ws, 'This question could not be sent.');
       const time = Math.max(5, Math.min(60, int(m.time, 60) || 20)), now = Date.now();
@@ -207,6 +242,15 @@ function onMsg(ws, m) {
       const now = Date.now();
       if (now < L.startAt - 500 || now > L.endAt + 1000) return;
       const a = cleanAns(L.q, m.a), sc = a == null ? 0 : scoreAns(L.q, a);
+      if (inBonus(L)) {
+        const b = L.bonus.res[p.id]; if (!b) return;
+        if (sc >= 0.8) b.right++;
+        b.ms += Math.min(L.time * 1000, Math.max(0, now - L.startAt));
+        p.ans = { a, sc, pts: 0, bonus: 0 }; L.count++;
+        send(ws, { t: 'lack', i: L.i });
+        toAll(r, { t: 'lcount', i: L.i, count: L.count, of: answering(r).length, who: answeredIds(r) });
+        return checkAll(r);
+      }
       const used = Math.min(1, Math.max(0, (now - L.startAt) / (L.time * 1000)));
       // Up to 1000 points per question: 600 for the answer, 300 for speed and 100 streak bonus.
       // An answer that is at least 80 % right also moves the train one station (p.right).
@@ -216,7 +260,7 @@ function onMsg(ws, m) {
       if (sc >= 0.8) p.right++;
       p.score += pts + bonus; p.ans = { a, sc, pts, bonus }; L.count++;
       send(ws, { t: 'lack', i: L.i });
-      toAll(r, { t: 'lcount', i: L.i, count: L.count, of: active(r).length, who: answeredIds(r) });
+      toAll(r, { t: 'lcount', i: L.i, count: L.count, of: answering(r).length, who: answeredIds(r) });
       return checkAll(r);
     }
     case 'skip':
